@@ -6,6 +6,7 @@ const T = "#00ACC1"   // turquesa principal
 const TL = "#e0f7fa"  // turquesa claro
 
 export default function PantallaAdmin() {
+  const [seccion, setSeccion] = useState("relevamiento") // "relevamiento" | "vendedores"
   const [datos, setDatos] = useState([])
   const [tabActiva, setTabActiva] = useState(0)
   const [filtroCat, setFiltroCat] = useState("")
@@ -58,13 +59,23 @@ export default function PantallaAdmin() {
     </div>
   )
 
+  if (seccion === "vendedores") return <SeccionVendedores setSeccion={setSeccion} seccion={seccion} />
+
   return (
     <div style={{ minHeight: "100vh", background: "white", fontFamily: "system-ui, -apple-system, sans-serif" }}>
 
-      {/* Top nav — igual que CandyPanel */}
+      {/* Top nav */}
       <div style={{ background: "#1a1f2e", padding: "0 32px", height: 52, display: "flex", alignItems: "center", gap: 24 }}>
         <span style={{ color: "white", fontWeight: 700, fontSize: 15 }}>🍬 CandyMovil</span>
-        <span style={{ color: "#9ca3af", fontSize: 13 }}>Panel de Relevamientos</span>
+        <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
+          {[["relevamiento", "Relevamientos"], ["vendedores", "Vendedores"]].map(([id, label]) => (
+            <button key={id} onClick={() => setSeccion(id)} style={{
+              padding: "6px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+              background: seccion === id ? T : "transparent",
+              color: seccion === id ? "white" : "#9ca3af",
+            }}>{label}</button>
+          ))}
+        </div>
       </div>
 
       {/* Contenido */}
@@ -195,4 +206,133 @@ export default function PantallaAdmin() {
       </div>
     </div>
   )
+}
+
+function SeccionVendedores({ seccion, setSeccion }) {
+  const [vendedores, setVendedores] = useState([])
+  const [numero, setNumero] = useState("")
+  const [nombre, setNombre] = useState("")
+  const [pin, setPin] = useState("")
+  const [error, setError] = useState("")
+  const [guardando, setGuardando] = useState(false)
+
+  useEffect(() => {
+    fetch(`${API}/vendedores/`).then(r => r.json()).then(setVendedores).catch(() => {})
+  }, [])
+
+  async function handleCrear(e) {
+    e.preventDefault()
+    if (!numero.trim() || !nombre.trim() || !pin.trim()) { setError("Completá todos los campos"); return }
+    setGuardando(true); setError("")
+    try {
+      const r = await fetch(`${API}/vendedores/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numero: numero.trim(), nombre: nombre.trim(), pin: pin.trim() }),
+      })
+      if (!r.ok) { const d = await r.json(); throw new Error(d.detail || "Error") }
+      const v = await r.json()
+      setVendedores(prev => [...prev, v])
+      setNumero(""); setNombre(""); setPin("")
+    } catch (err) { setError(err.message) }
+    finally { setGuardando(false) }
+  }
+
+  async function handleEliminar(id) {
+    if (!window.confirm("¿Dar de baja este vendedor?")) return
+    await fetch(`${API}/vendedores/${id}`, { method: "DELETE" })
+    setVendedores(prev => prev.filter(v => v.id !== id))
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", background: "white", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+      {/* Top nav */}
+      <div style={{ background: "#1a1f2e", padding: "0 32px", height: 52, display: "flex", alignItems: "center", gap: 24 }}>
+        <span style={{ color: "white", fontWeight: 700, fontSize: 15 }}>🍬 CandyMovil</span>
+        <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
+          {[["relevamiento", "Relevamientos"], ["vendedores", "Vendedores"]].map(([id, label]) => (
+            <button key={id} onClick={() => setSeccion(id)} style={{
+              padding: "6px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+              background: seccion === id ? T : "transparent",
+              color: seccion === id ? "white" : "#9ca3af",
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: "32px 40px", maxWidth: 800 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>Vendedores</h1>
+        <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 32 }}>Alta y baja de operarios que usan CandyMóvil</p>
+
+        {/* Formulario */}
+        <form onSubmit={handleCrear} style={{
+          background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12,
+          padding: "24px", marginBottom: 32,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T, letterSpacing: "0.05em", marginBottom: 16, textTransform: "uppercase" }}>
+            Nuevo vendedor
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 120 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>Número</label>
+              <input value={numero} onChange={e => setNumero(e.target.value)} placeholder="Ej: 22"
+                style={inputStyle} onFocus={e => e.target.style.borderColor = T} onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 200 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>Nombre completo</label>
+              <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: María García"
+                style={inputStyle} onFocus={e => e.target.style.borderColor = T} onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 140 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280" }}>PIN</label>
+              <input value={pin} onChange={e => setPin(e.target.value)} placeholder="Ej: 1234" type="password"
+                style={inputStyle} onFocus={e => e.target.style.borderColor = T} onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+              <button type="submit" disabled={guardando} style={{
+                height: 38, padding: "0 20px", borderRadius: 8, border: "none", cursor: "pointer",
+                background: T, color: "white", fontSize: 13, fontWeight: 700,
+                opacity: guardando ? 0.6 : 1,
+              }}>{guardando ? "Guardando..." : "Dar de alta"}</button>
+            </div>
+          </div>
+          {error && <p style={{ margin: "10px 0 0", fontSize: 13, color: "#e53935" }}>{error}</p>}
+        </form>
+
+        {/* Tabla */}
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
+              {["#", "Número", "Nombre", ""].map((h, i) => (
+                <th key={i} style={{ textAlign: "left", padding: "10px 16px", fontSize: 12, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {vendedores.length === 0 ? (
+              <tr><td colSpan={4} style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>No hay vendedores dados de alta</td></tr>
+            ) : vendedores.map((v, i) => (
+              <tr key={v.id} style={{ background: i % 2 === 0 ? "white" : "#fafafa", borderBottom: "1px solid #f3f4f6" }}>
+                <td style={{ padding: "11px 16px", color: "#9ca3af", fontSize: 13 }}>{i + 1}</td>
+                <td style={{ padding: "11px 16px", fontFamily: "monospace", fontWeight: 700, color: T }}>{v.numero}</td>
+                <td style={{ padding: "11px 16px", color: "#111827" }}>{v.nombre}</td>
+                <td style={{ padding: "11px 16px", textAlign: "right" }}>
+                  <button onClick={() => handleEliminar(v.id)} style={{
+                    padding: "5px 14px", borderRadius: 6, border: "1px solid #fecaca",
+                    background: "white", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  }}>Dar de baja</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+const inputStyle = {
+  height: 38, padding: "0 12px", borderRadius: 8,
+  border: "1px solid #e5e7eb", fontSize: 14, outline: "none",
+  background: "white", color: "#111827",
 }
