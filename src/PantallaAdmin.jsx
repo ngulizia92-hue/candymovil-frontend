@@ -296,8 +296,10 @@ function LogModal({ linea, ubicacion, vendedoresMap, onClose, onRefresh }) {
                 <div style={{ fontSize: 28, fontWeight: 700, color: T }}>{linea.total} u.</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>Registros</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>{linea.entradas.length}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>Movimientos</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
+                  {linea.entradas.length + linea.entradas.filter(e => e.eliminado).length}
+                </div>
               </div>
               <button
                 onClick={() => { setAjustando(true); setNuevaCantidad(String(linea.total)) }}
@@ -374,36 +376,61 @@ function LogModal({ linea, ubicacion, vendedoresMap, onClose, onRefresh }) {
             <tbody>
               {linea.entradas.length === 0 ? (
                 <tr><td colSpan={4} style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>Sin registros</td></tr>
-              ) : linea.entradas.map(e => (
-                <tr key={e.id} style={{ borderBottom: "1px solid #f9fafb", opacity: e.eliminado ? 0.55 : 1 }}>
-                  <td style={{ padding: "10px 16px", color: "#6b7280" }}>{fmtFecha(e.fecha)}</td>
-                  <td style={{ padding: "10px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontWeight: 600, color: e.eliminado ? "#9ca3af" : "#111827" }}>
-                        {resolveNombre(e.operario, vendedoresMap)}
-                      </span>
-                      {e.operario !== "ADMIN" && (
-                        <span style={{ fontSize: 11, color: "#9ca3af", fontFamily: "monospace" }}>#{e.operario}</span>
+              ) : linea.entradas.flatMap(e => {
+                const filaOriginal = (
+                  <tr key={`orig-${e.id}`} style={{ borderBottom: e.eliminado ? "none" : "1px solid #f9fafb" }}>
+                    <td style={{ padding: "10px 16px", color: e.eliminado ? "#9ca3af" : "#6b7280" }}>{fmtFecha(e.fecha)}</td>
+                    <td style={{ padding: "10px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontWeight: 600, color: e.eliminado ? "#9ca3af" : "#111827" }}>
+                          {resolveNombre(e.operario, vendedoresMap)}
+                        </span>
+                        {e.operario !== "ADMIN" && (
+                          <span style={{ fontSize: 11, color: "#9ca3af", fontFamily: "monospace" }}>#{e.operario}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: "10px 16px", fontWeight: 700, color: e.eliminado ? "#9ca3af" : (e.cantidad < 0 ? "#ef4444" : T), textDecoration: e.eliminado ? "line-through" : "none" }}>
+                      {e.cantidad > 0 ? `+${e.cantidad}` : e.cantidad}
+                    </td>
+                    <td style={{ padding: "10px 16px" }}>
+                      {e.eliminado ? (
+                        <span style={{ background: "#f3f4f6", color: "#9ca3af", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>ANULADO</span>
+                      ) : e.operario === "ADMIN" ? (
+                        <span style={{ background: "#fef9c3", color: "#854d0e", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>AJUSTE ADMIN</span>
+                      ) : (
+                        <span style={{ background: "#f0fdf4", color: "#16a34a", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>ACTIVO</span>
                       )}
-                    </div>
-                  </td>
-                  <td style={{ padding: "10px 16px", fontWeight: 700, color: e.eliminado ? "#9ca3af" : (e.cantidad < 0 ? "#ef4444" : T), textDecoration: e.eliminado ? "line-through" : "none" }}>
-                    {e.cantidad > 0 ? `+${e.cantidad}` : e.cantidad}
-                  </td>
-                  <td style={{ padding: "10px 16px" }}>
-                    {e.eliminado ? (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ background: "#fef2f2", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>ELIMINADO</span>
-                        <span style={{ color: "#9ca3af", fontSize: 11 }}>por {resolveNombre(e.eliminado_por, vendedoresMap)} · {fmtFecha(e.eliminado_en)}</span>
-                      </span>
-                    ) : e.operario === "ADMIN" ? (
-                      <span style={{ background: "#fef9c3", color: "#854d0e", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>AJUSTE ADMIN</span>
-                    ) : (
-                      <span style={{ background: "#f0fdf4", color: "#16a34a", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>ACTIVO</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                )
+
+                if (!e.eliminado) return [filaOriginal]
+
+                const filaAnulacion = (
+                  <tr key={`anul-${e.id}`} style={{ borderBottom: "1px solid #f9fafb", background: "#fef2f2" }}>
+                    <td style={{ padding: "10px 16px", color: "#ef4444", fontSize: 12 }}>{fmtFecha(e.eliminado_en)}</td>
+                    <td style={{ padding: "10px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontWeight: 600, color: "#ef4444", fontSize: 12 }}>
+                          {resolveNombre(e.eliminado_por, vendedoresMap)}
+                        </span>
+                        {e.eliminado_por !== "ADMIN" && (
+                          <span style={{ fontSize: 11, color: "#f87171", fontFamily: "monospace" }}>#{e.eliminado_por}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: "10px 16px", fontWeight: 700, color: "#ef4444" }}>
+                      -{e.cantidad}
+                    </td>
+                    <td style={{ padding: "10px 16px" }}>
+                      <span style={{ background: "#fef2f2", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>ELIMINADO</span>
+                    </td>
+                  </tr>
+                )
+
+                return [filaOriginal, filaAnulacion]
+              })}
             </tbody>
           </table>
         </div>
