@@ -75,21 +75,28 @@ export default function PantallaAdmin() {
       </div>
 
       {/* Tabs ubicaciones */}
-      <div className="px-8 pt-4 flex border-b border-gray-200">
+      <div style={{ display: "flex", padding: "16px 32px 0", borderBottom: "2px solid #e5e7eb", gap: 4 }}>
         {datos.map((d, i) => (
           <button
             key={d.ubicacion_id}
             onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false) }}
-            className="px-5 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2"
             style={{
-              borderColor: tabActiva === i ? "#00ACC1" : "transparent",
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 20px",
+              fontSize: 14, fontWeight: 600,
+              border: "none", borderBottom: tabActiva === i ? "3px solid #00ACC1" : "3px solid transparent",
+              background: "none", cursor: "pointer", whiteSpace: "nowrap",
               color: tabActiva === i ? "#00ACC1" : "#6b7280",
               marginBottom: -2,
             }}
           >
             {d.ubicacion}
-            <span className="text-xs font-bold rounded-full px-2 py-0.5"
-              style={{ background: tabActiva === i ? "#e0f7fa" : "#f3f4f6", color: tabActiva === i ? "#00ACC1" : "#9ca3af" }}>
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              background: tabActiva === i ? "#e0f7fa" : "#f3f4f6",
+              color: tabActiva === i ? "#00ACC1" : "#9ca3af",
+              borderRadius: 999, padding: "2px 8px",
+            }}>
               {d.lineas?.filter(l => l.relevado).length || 0}
             </span>
           </button>
@@ -97,50 +104,38 @@ export default function PantallaAdmin() {
       </div>
 
       {/* Sub-tabs categorías */}
-      <div className="px-8 pt-3 pb-2 flex gap-2 flex-wrap border-b border-gray-100">
-        <button
-          onClick={() => { setFiltroCat(""); setFiltroClasif("") }}
-          className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
-          style={!filtroCat
-            ? { background: "#00ACC1", color: "white" }
-            : { background: "#f3f4f6", color: "#6b7280" }
-          }
-        >
-          Ver todos
-        </button>
-        {categorias.map(c => (
-          <button
-            key={c}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "12px 32px", borderBottom: "1px solid #f3f4f6", background: "#fafafa" }}>
+        {["", ...categorias].map(c => (
+          <button key={c || "__all__"}
             onClick={() => { setFiltroCat(c); setFiltroClasif("") }}
-            className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
-            style={filtroCat === c
-              ? { background: "#00ACC1", color: "white" }
-              : { background: "#f3f4f6", color: "#6b7280" }
-            }
+            style={{
+              padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600,
+              border: "none", cursor: "pointer",
+              background: filtroCat === c ? "#00ACC1" : "white",
+              color: filtroCat === c ? "white" : "#6b7280",
+              boxShadow: filtroCat === c ? "none" : "0 0 0 1px #e5e7eb",
+            }}
           >
-            {c}
+            {c || "Ver todos"}
           </button>
         ))}
       </div>
 
       {/* Sub-tabs clasificaciones */}
       {filtroCat && clasificaciones.length > 0 && (
-        <div className="px-8 py-2 flex gap-2 flex-wrap border-b border-gray-100">
-          <button
-            onClick={() => setFiltroClasif("")}
-            className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
-            style={!filtroClasif ? { border: "2px solid #00ACC1", color: "#00ACC1", background: "white" } : { background: "#f9fafb", color: "#9ca3af", border: "2px solid transparent" }}
-          >
-            Todas
-          </button>
-          {clasificaciones.map(c => (
-            <button
-              key={c}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 32px", borderBottom: "1px solid #f3f4f6", background: "white" }}>
+          {["", ...clasificaciones].map(c => (
+            <button key={c || "__all__"}
               onClick={() => setFiltroClasif(c)}
-              className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
-              style={filtroClasif === c ? { border: "2px solid #00ACC1", color: "#00ACC1", background: "white" } : { background: "#f9fafb", color: "#9ca3af", border: "2px solid transparent" }}
+              style={{
+                padding: "5px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                cursor: "pointer",
+                background: filtroClasif === c ? "#e0f7fa" : "white",
+                color: filtroClasif === c ? "#00ACC1" : "#9ca3af",
+                border: filtroClasif === c ? "2px solid #00ACC1" : "2px solid #e5e7eb",
+              }}
             >
-              {c}
+              {c || "Todas"}
             </button>
           ))}
         </div>
