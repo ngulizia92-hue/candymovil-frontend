@@ -24,7 +24,7 @@ export default function PantallaIngreso({ onIngresar }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ numero: vendedor.trim(), pin: pin.trim() }),
       })
-      if (r.status === 401) { setError("Número o PIN incorrecto"); return }
+      if (r.status === 401) { setError("Datos Inválidos"); return }
       if (!r.ok) { setError("Error al conectar. Intentá de nuevo."); return }
       const data = await r.json()
       onIngresar({ vendedor: data.numero, nombre: data.nombre })
