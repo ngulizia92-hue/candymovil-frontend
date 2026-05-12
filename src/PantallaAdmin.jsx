@@ -2,6 +2,9 @@ import { useState, useEffect, useMemo } from "react"
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
+const T = "#00ACC1"   // turquesa principal
+const TL = "#e0f7fa"  // turquesa claro
+
 export default function PantallaAdmin() {
   const [datos, setDatos] = useState([])
   const [tabActiva, setTabActiva] = useState(0)
@@ -50,166 +53,140 @@ export default function PantallaAdmin() {
   const totalRelevados = useMemo(() => ubicacion?.lineas.filter(l => l.relevado).length || 0, [ubicacion])
 
   if (loading) return (
-    <div className="min-h-svh flex items-center justify-center bg-white">
-      <div className="text-sm font-medium text-gray-400">Cargando relevamientos...</div>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "white" }}>
+      <span style={{ color: "#9ca3af", fontSize: 14 }}>Cargando relevamientos...</span>
     </div>
   )
 
   return (
-    <div className="min-h-svh flex flex-col bg-white">
+    <div style={{ minHeight: "100vh", background: "white", fontFamily: "system-ui, -apple-system, sans-serif" }}>
 
-      {/* Top nav */}
-      <div className="px-8 py-4 flex items-center gap-3 border-b border-gray-100">
-        <span className="font-bold text-gray-800" style={{ fontSize: 15 }}>CandyMovil</span>
-        <span className="text-gray-300">·</span>
-        <span className="text-gray-500 text-sm">Panel de Relevamientos</span>
+      {/* Top nav — igual que CandyPanel */}
+      <div style={{ background: "#1a1f2e", padding: "0 32px", height: 52, display: "flex", alignItems: "center", gap: 24 }}>
+        <span style={{ color: "white", fontWeight: 700, fontSize: 15 }}>🍬 CandyMovil</span>
+        <span style={{ color: "#9ca3af", fontSize: 13 }}>Panel de Relevamientos</span>
       </div>
 
-      {/* Page header */}
-      <div className="px-8 pt-6 pb-2">
-        <h1 className="text-2xl font-bold text-gray-900">Relevamiento de Stock</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          {ubicacion?.lineas.length || 0} SKUs · {totalRelevados} relevados
-          {ubicacion?.fecha && ` · Último: ${new Date(ubicacion.fecha).toLocaleString("es-AR")} — Vendedor ${ubicacion.operario}`}
-        </p>
-      </div>
+      {/* Contenido */}
+      <div style={{ padding: "32px 40px 0" }}>
 
-      {/* Tabs ubicaciones */}
-      <div style={{ display: "flex", padding: "16px 32px 0", borderBottom: "2px solid #e5e7eb", gap: 4 }}>
-        {datos.map((d, i) => (
-          <button
-            key={d.ubicacion_id}
-            onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false) }}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              padding: "10px 20px",
-              fontSize: 14, fontWeight: 600,
-              border: "none", borderBottom: tabActiva === i ? "3px solid #00ACC1" : "3px solid transparent",
-              background: "none", cursor: "pointer", whiteSpace: "nowrap",
-              color: tabActiva === i ? "#00ACC1" : "#6b7280",
-              marginBottom: -2,
-            }}
-          >
-            {d.ubicacion}
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              background: tabActiva === i ? "#e0f7fa" : "#f3f4f6",
-              color: tabActiva === i ? "#00ACC1" : "#9ca3af",
-              borderRadius: 999, padding: "2px 8px",
-            }}>
-              {d.lineas?.filter(l => l.relevado).length || 0}
-            </span>
-          </button>
-        ))}
-      </div>
+        {/* Título */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>Relevamiento de Stock</h1>
+          <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
+            {ubicacion?.lineas.length || 0} SKUs · {totalRelevados} relevados
+            {ubicacion?.fecha && ` · Último: ${new Date(ubicacion.fecha).toLocaleString("es-AR")} — Vendedor ${ubicacion.operario}`}
+          </p>
+        </div>
 
-      {/* Sub-tabs categorías */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "12px 32px", borderBottom: "1px solid #f3f4f6", background: "#fafafa" }}>
-        {["", ...categorias].map(c => (
-          <button key={c || "__all__"}
-            onClick={() => { setFiltroCat(c); setFiltroClasif("") }}
-            style={{
-              padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600,
-              border: "none", cursor: "pointer",
-              background: filtroCat === c ? "#00ACC1" : "white",
-              color: filtroCat === c ? "white" : "#6b7280",
-              boxShadow: filtroCat === c ? "none" : "0 0 0 1px #e5e7eb",
-            }}
-          >
-            {c || "Ver todos"}
-          </button>
-        ))}
-      </div>
-
-      {/* Sub-tabs clasificaciones */}
-      {filtroCat && clasificaciones.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "10px 32px", borderBottom: "1px solid #f3f4f6", background: "white" }}>
-          {["", ...clasificaciones].map(c => (
-            <button key={c || "__all__"}
-              onClick={() => setFiltroClasif(c)}
+        {/* Tabs ubicaciones — igual estilo que CandyPanel */}
+        <div style={{ borderBottom: "1px solid #e5e7eb", display: "flex", gap: 0, marginBottom: 0 }}>
+          {datos.map((d, i) => (
+            <button key={d.ubicacion_id}
+              onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false) }}
               style={{
-                padding: "5px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                cursor: "pointer",
-                background: filtroClasif === c ? "#e0f7fa" : "white",
-                color: filtroClasif === c ? "#00ACC1" : "#9ca3af",
-                border: filtroClasif === c ? "2px solid #00ACC1" : "2px solid #e5e7eb",
+                padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                background: "none", border: "none",
+                borderBottom: tabActiva === i ? `3px solid ${T}` : "3px solid transparent",
+                color: tabActiva === i ? T : "#6b7280",
+                marginBottom: -1,
               }}
             >
-              {c || "Todas"}
+              {d.ubicacion}
             </button>
           ))}
         </div>
-      )}
 
-      {/* Search + count */}
-      <div className="px-8 py-3 flex items-center justify-between border-b border-gray-100">
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar SKU, nombre..."
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-            className="pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-teal-400 w-64"
-            style={{ color: "#1a2332" }}
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setSoloRelevados(!soloRelevados)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all border flex items-center gap-2"
-            style={soloRelevados
-              ? { background: "#FFC107", color: "#1a2332", borderColor: "#FFC107" }
-              : { background: "white", color: "#6b7280", borderColor: "#e5e7eb" }
-            }
-          >
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: soloRelevados ? "#1a2332" : "#d1d5db", display: "inline-block" }}/>
-            Solo relevados
-          </button>
-          <span className="text-sm text-gray-400 font-medium">{lineasFiltradas.length} productos</span>
+
+        {/* Buscador + contador */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
+          <div style={{ position: "relative" }}>
+            <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              type="text" placeholder="Buscar SKU, nombre..."
+              value={busqueda} onChange={e => setBusqueda(e.target.value)}
+              style={{
+                paddingLeft: 36, paddingRight: 16, paddingTop: 8, paddingBottom: 8,
+                fontSize: 14, border: "1px solid #e5e7eb", borderRadius: 8,
+                outline: "none", width: 280, color: "#111827",
+              }}
+              onFocus={e => e.target.style.borderColor = T}
+              onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <select
+              value={filtroCat}
+              onChange={e => { setFiltroCat(e.target.value); setFiltroClasif("") }}
+              style={{ padding: "7px 12px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 8, color: filtroCat ? "#111827" : "#9ca3af", outline: "none", cursor: "pointer" }}
+              onFocus={e => e.target.style.borderColor = T}
+              onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+            >
+              <option value="">Categoría</option>
+              {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select
+              value={filtroClasif}
+              onChange={e => setFiltroClasif(e.target.value)}
+              style={{ padding: "7px 12px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 8, color: filtroClasif ? "#111827" : "#9ca3af", outline: "none", cursor: "pointer" }}
+              onFocus={e => e.target.style.borderColor = T}
+              onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+            >
+              <option value="">Clasificación</option>
+              {clasificaciones.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button
+              onClick={() => setSoloRelevados(!soloRelevados)}
+              style={{
+                padding: "7px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                cursor: "pointer",
+                background: soloRelevados ? T : "white",
+                border: `1px solid ${soloRelevados ? T : "#e5e7eb"}`,
+                color: soloRelevados ? "white" : "#6b7280",
+              }}
+            >
+              Solo relevados
+            </button>
+            <span style={{ fontSize: 13, color: "#9ca3af" }}>{lineasFiltradas.length} productos</span>
+          </div>
         </div>
       </div>
 
       {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="w-full text-sm">
-          <thead style={{ background: "white", position: "sticky", top: 0, borderBottom: "2px solid #f3f4f6" }}>
-            <tr>
-              <th className="text-left px-8 py-3 font-bold text-xs uppercase tracking-wider" style={{ color: "#00ACC1" }}>SKU</th>
-              <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider" style={{ color: "#00ACC1" }}>Nombre</th>
-              <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider" style={{ color: "#00ACC1" }}>Categoría</th>
-              <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider" style={{ color: "#00ACC1" }}>Clasificación</th>
-              <th className="text-right px-8 py-3 font-bold text-xs uppercase tracking-wider" style={{ color: "#00ACC1" }}>Unidades</th>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
+              <th style={{ textAlign: "left", padding: "12px 40px 12px 40px", fontSize: 12, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>SKU</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 12, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 12, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>Categoría</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 12, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>Clasificación</th>
+              <th style={{ textAlign: "right", padding: "12px 40px 12px 16px", fontSize: 12, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>Unidades</th>
             </tr>
           </thead>
           <tbody>
             {lineasFiltradas.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-20 text-sm text-gray-400">
-                  {!ubicacion || ubicacion.lineas.length === 0 ? "No hay datos para esta ubicación" : "Sin resultados"}
-                </td>
-              </tr>
+              <tr><td colSpan={5} style={{ textAlign: "center", padding: "80px", color: "#9ca3af", fontSize: 14 }}>Sin resultados</td></tr>
             ) : lineasFiltradas.map((l, i) => (
-              <tr key={l.sku} className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
-                style={{ background: i % 2 === 0 ? "white" : "#fafafa" }}>
-                <td className="px-8 py-3 font-mono text-xs font-semibold" style={{ color: "#374151" }}>{l.sku}</td>
-                <td className="px-4 py-3 font-medium text-gray-800">{l.descripcion}</td>
-                <td className="px-4 py-3 text-sm" style={{ color: "#00ACC1" }}>{l.categoria}</td>
-                <td className="px-4 py-3 text-sm text-gray-500">{l.clasificacion}</td>
-                <td className="px-8 py-3 text-right font-bold" style={{ color: l.relevado ? "#FFC107" : "#d1d5db", fontSize: l.relevado ? 16 : 14 }}>
+              <tr key={l.sku} style={{ background: i % 2 === 0 ? "white" : "#fafafa", borderBottom: "1px solid #f9fafb" }}>
+                <td style={{ padding: "11px 40px", fontFamily: "monospace", fontSize: 13, color: "#374151", fontWeight: 500 }}>{l.sku}</td>
+                <td style={{ padding: "11px 16px", color: l.relevado ? T : "#111827", fontWeight: l.relevado ? 600 : 400 }}>{l.descripcion}</td>
+                <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.categoria}</td>
+                <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.clasificacion}</td>
+                <td style={{ padding: "11px 40px 11px 16px", textAlign: "right", fontWeight: 700, color: l.relevado ? T : "#d1d5db", fontSize: l.relevado ? 15 : 13 }}>
                   {l.relevado ? l.cantidad : "—"}
                 </td>
               </tr>
             ))}
           </tbody>
-          <tfoot style={{ background: "#f9fafb", borderTop: "2px solid #e5e7eb", position: "sticky", bottom: 0 }}>
-            <tr>
-              <td colSpan={4} className="px-8 py-3 text-sm font-semibold text-gray-500">
+          <tfoot>
+            <tr style={{ borderTop: "2px solid #f3f4f6", background: "#fafafa" }}>
+              <td colSpan={4} style={{ padding: "12px 40px", fontSize: 13, color: "#9ca3af", fontWeight: 500 }}>
                 {lineasFiltradas.length} artículos · {lineasFiltradas.filter(l => l.relevado).length} relevados
               </td>
-              <td className="px-8 py-3 text-right font-bold text-base" style={{ color: "#00ACC1" }}>
+              <td style={{ padding: "12px 40px 12px 16px", textAlign: "right", fontWeight: 700, color: T, fontSize: 15 }}>
                 {lineasFiltradas.filter(l => l.relevado).reduce((s, l) => s + l.cantidad, 0).toLocaleString("es-AR")} u.
               </td>
             </tr>
