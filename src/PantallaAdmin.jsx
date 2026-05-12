@@ -75,19 +75,21 @@ export default function PantallaAdmin() {
       </div>
 
       {/* Tabs ubicaciones */}
-      <div className="px-8 pt-4 flex gap-0 border-b border-gray-200">
+      <div className="px-8 pt-4 flex border-b border-gray-200">
         {datos.map((d, i) => (
           <button
             key={d.ubicacion_id}
             onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false) }}
-            className="px-5 py-3 text-sm font-semibold border-b-2 transition-colors mr-1"
+            className="px-5 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2"
             style={{
               borderColor: tabActiva === i ? "#00ACC1" : "transparent",
               color: tabActiva === i ? "#00ACC1" : "#6b7280",
+              marginBottom: -2,
             }}
           >
             {d.ubicacion}
-            <span className="ml-2 text-xs font-bold" style={{ color: tabActiva === i ? "#00ACC1" : "#9ca3af" }}>
+            <span className="text-xs font-bold rounded-full px-2 py-0.5"
+              style={{ background: tabActiva === i ? "#e0f7fa" : "#f3f4f6", color: tabActiva === i ? "#00ACC1" : "#9ca3af" }}>
               {d.lineas?.filter(l => l.relevado).length || 0}
             </span>
           </button>
@@ -162,12 +164,13 @@ export default function PantallaAdmin() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSoloRelevados(!soloRelevados)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all border"
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all border flex items-center gap-2"
             style={soloRelevados
               ? { background: "#FFC107", color: "#1a2332", borderColor: "#FFC107" }
-              : { background: "white", color: "#9ca3af", borderColor: "#e5e7eb" }
+              : { background: "white", color: "#6b7280", borderColor: "#e5e7eb" }
             }
           >
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: soloRelevados ? "#1a2332" : "#d1d5db", display: "inline-block" }}/>
             Solo relevados
           </button>
           <span className="text-sm text-gray-400 font-medium">{lineasFiltradas.length} productos</span>
