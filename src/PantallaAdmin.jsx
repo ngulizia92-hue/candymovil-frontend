@@ -2,26 +2,44 @@ import { useState, useEffect, useMemo } from "react"
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
-const T = "#00ACC1"   // turquesa principal
-const TL = "#e0f7fa"  // turquesa claro
+const T = "#00ACC1"
+const TL = "#e0f7fa"
+
+const IcPencil = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+)
 
 export default function PantallaAdmin() {
-  const [seccion, setSeccion] = useState("relevamiento") // "relevamiento" | "vendedores"
+  const [seccion, setSeccion] = useState("relevamiento")
   const [datos, setDatos] = useState([])
+  const [vendedores, setVendedores] = useState([])
   const [tabActiva, setTabActiva] = useState(0)
   const [filtroCat, setFiltroCat] = useState("")
   const [filtroClasif, setFiltroClasif] = useState("")
   const [busqueda, setBusqueda] = useState("")
   const [soloRelevados, setSoloRelevados] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [modalLinea, setModalLinea] = useState(null) // { sku, descripcion, categoria, clasificacion, entradas, total }
+  const [modalLinea, setModalLinea] = useState(null)
 
-  useEffect(() => {
+  const cargarDatos = () => {
     fetch(`${API}/admin/resumen`)
       .then(r => r.json())
       .then(d => { setDatos(d); setLoading(false) })
       .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    cargarDatos()
+    fetch(`${API}/vendedores/`).then(r => r.json()).then(setVendedores).catch(() => {})
   }, [])
+
+  const vendedoresMap = useMemo(() =>
+    Object.fromEntries(vendedores.map(v => [v.numero, v.nombre])),
+    [vendedores]
+  )
 
   const ubicacion = datos[tabActiva]
 
@@ -81,17 +99,13 @@ export default function PantallaAdmin() {
 
       {/* Contenido */}
       <div style={{ padding: "32px 40px 0" }}>
-
-        {/* Título */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>Relevamiento de Stock</h1>
           <p style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
             {ubicacion?.lineas.length || 0} SKUs · {totalRelevados} relevados
-            {ubicacion?.fecha && ` · Último: ${new Date(ubicacion.fecha).toLocaleString("es-AR")} — Vendedor ${ubicacion.operario}`}
           </p>
         </div>
 
-        {/* Tabs ubicaciones — igual estilo que CandyPanel */}
         <div style={{ borderBottom: "1px solid #e5e7eb", display: "flex", gap: 0, marginBottom: 0 }}>
           {datos.map((d, i) => (
             <button key={d.ubicacion_id}
@@ -109,8 +123,6 @@ export default function PantallaAdmin() {
           ))}
         </div>
 
-
-        {/* Buscador + contador */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
           <div style={{ position: "relative" }}>
             <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,45 +141,45 @@ export default function PantallaAdmin() {
             />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <select
-              value={filtroCat}
-              onChange={e => { setFiltroCat(e.target.value); setFiltroClasif("") }}
+            <select value={filtroCat} onChange={e => { setFiltroCat(e.target.value); setFiltroClasif("") }}
               style={{ padding: "7px 12px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 8, color: filtroCat ? "#111827" : "#9ca3af", outline: "none", cursor: "pointer" }}
-              onFocus={e => e.target.style.borderColor = T}
-              onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+              onFocus={e => e.target.style.borderColor = T} onBlur={e => e.target.style.borderColor = "#e5e7eb"}
             >
               <option value="">Categoría</option>
               {categorias.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select
-              value={filtroClasif}
-              onChange={e => setFiltroClasif(e.target.value)}
+            <select value={filtroClasif} onChange={e => setFiltroClasif(e.target.value)}
               style={{ padding: "7px 12px", fontSize: 13, border: "1px solid #e5e7eb", borderRadius: 8, color: filtroClasif ? "#111827" : "#9ca3af", outline: "none", cursor: "pointer" }}
-              onFocus={e => e.target.style.borderColor = T}
-              onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+              onFocus={e => e.target.style.borderColor = T} onBlur={e => e.target.style.borderColor = "#e5e7eb"}
             >
               <option value="">Clasificación</option>
               {clasificaciones.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <button
-              onClick={() => setSoloRelevados(!soloRelevados)}
-              style={{
-                padding: "7px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-                cursor: "pointer",
-                background: soloRelevados ? T : "white",
-                border: `1px solid ${soloRelevados ? T : "#e5e7eb"}`,
-                color: soloRelevados ? "white" : "#6b7280",
-              }}
-            >
-              Solo relevados
-            </button>
+            <button onClick={() => setSoloRelevados(!soloRelevados)} style={{
+              padding: "7px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              background: soloRelevados ? T : "white",
+              border: `1px solid ${soloRelevados ? T : "#e5e7eb"}`,
+              color: soloRelevados ? "white" : "#6b7280",
+            }}>Solo relevados</button>
             <span style={{ fontSize: 13, color: "#9ca3af" }}>{lineasFiltradas.length} productos</span>
           </div>
         </div>
       </div>
 
       {/* Modal log */}
-      {modalLinea && <LogModal linea={modalLinea} ubicacion={ubicacion?.ubicacion} onClose={() => setModalLinea(null)} />}
+      {modalLinea && (
+        <LogModal
+          linea={modalLinea}
+          ubicacion={ubicacion}
+          vendedoresMap={vendedoresMap}
+          onClose={() => setModalLinea(null)}
+          onRefresh={() => {
+            cargarDatos()
+            // Actualizar también el modal con los nuevos datos
+            setModalLinea(null)
+          }}
+        />
+      )}
 
       {/* Tabla */}
       <div style={{ overflowX: "auto" }}>
@@ -215,8 +227,46 @@ export default function PantallaAdmin() {
   )
 }
 
-function LogModal({ linea, ubicacion, onClose }) {
+function resolveNombre(operario, vendedoresMap) {
+  if (!operario || operario === "ADMIN") return "Admin"
+  return vendedoresMap[operario] || `#${operario}`
+}
+
+function LogModal({ linea, ubicacion, vendedoresMap, onClose, onRefresh }) {
+  const [ajustando, setAjustando] = useState(false)
+  const [nuevaCantidad, setNuevaCantidad] = useState("")
+  const [guardando, setGuardando] = useState(false)
+  const [errorAjuste, setErrorAjuste] = useState("")
+
   const fmtFecha = iso => new Date(iso).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })
+
+  const delta = nuevaCantidad !== "" ? Number(nuevaCantidad) - linea.total : null
+
+  async function handleAjustar() {
+    if (!nuevaCantidad || Number(nuevaCantidad) < 0) return
+    if (delta === 0) { setAjustando(false); return }
+    setGuardando(true); setErrorAjuste("")
+    try {
+      const r = await fetch(`${API}/stock-log/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ubicacion_id: ubicacion.ubicacion_id,
+          sku: linea.sku,
+          cantidad: delta,
+          operario: "ADMIN",
+        }),
+      })
+      if (!r.ok) throw new Error("Error al guardar")
+      setAjustando(false)
+      setNuevaCantidad("")
+      onRefresh()
+    } catch (err) {
+      setErrorAjuste("No se pudo guardar el ajuste")
+    } finally {
+      setGuardando(false)
+    }
+  }
 
   return (
     <div
@@ -225,28 +275,90 @@ function LogModal({ linea, ubicacion, onClose }) {
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: "white", borderRadius: 12, width: 680, maxWidth: "95vw", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}
+        style={{ background: "white", borderRadius: 12, width: 700, maxWidth: "95vw", maxHeight: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.25)" }}
       >
-        {/* Header oscuro igual a CandyPanel */}
+        {/* Header oscuro */}
         <div style={{ background: "#1a1f2e", padding: "20px 24px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <div style={{ color: "#9ca3af", fontSize: 13, marginBottom: 4 }}>{linea.sku} · {ubicacion}</div>
+            <div style={{ color: "#9ca3af", fontSize: 13, marginBottom: 4 }}>{linea.sku} · {ubicacion?.ubicacion}</div>
             <div style={{ color: "white", fontSize: 20, fontWeight: 700, lineHeight: 1.2 }}>{linea.descripcion}</div>
             <div style={{ color: "#6b7280", fontSize: 12, marginTop: 4 }}>{linea.categoria}{linea.clasificacion ? ` · ${linea.clasificacion}` : ""}</div>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
         </div>
 
-        {/* Total */}
-        <div style={{ padding: "16px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: 24 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>Total relevado</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: T }}>{linea.total} u.</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>Registros</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>{linea.entradas.length}</div>
-          </div>
+        {/* Resumen + ajuste */}
+        <div style={{ padding: "16px 24px", borderBottom: "1px solid #f3f4f6" }}>
+          {!ajustando ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>Total relevado</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: T }}>{linea.total} u.</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 2 }}>Registros</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>{linea.entradas.length}</div>
+              </div>
+              <button
+                onClick={() => { setAjustando(true); setNuevaCantidad(String(linea.total)) }}
+                style={{
+                  marginLeft: "auto", display: "flex", alignItems: "center", gap: 7,
+                  padding: "8px 16px", borderRadius: 8, border: `1px solid #e5e7eb`,
+                  background: "white", color: "#374151", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                <IcPencil /> Ajustar unidades
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+                  Nueva cantidad total
+                </div>
+                <input
+                  type="number" min="0"
+                  value={nuevaCantidad}
+                  onChange={e => setNuevaCantidad(e.target.value)}
+                  autoFocus
+                  style={{
+                    width: 120, height: 42, padding: "0 14px", fontSize: 20, fontWeight: 700,
+                    border: `2px solid ${T}`, borderRadius: 8, outline: "none", color: "#111827",
+                  }}
+                />
+              </div>
+              {delta !== null && delta !== 0 && (
+                <div style={{ paddingBottom: 8 }}>
+                  <span style={{
+                    fontSize: 13, fontWeight: 700, padding: "4px 12px", borderRadius: 999,
+                    background: delta > 0 ? "#f0fdf4" : "#fef2f2",
+                    color: delta > 0 ? "#16a34a" : "#ef4444",
+                  }}>
+                    {delta > 0 ? `+${delta}` : delta} u. vs. actual ({linea.total} u.)
+                  </span>
+                </div>
+              )}
+              {delta === 0 && nuevaCantidad !== "" && (
+                <div style={{ paddingBottom: 8, fontSize: 13, color: "#9ca3af" }}>Sin cambios</div>
+              )}
+              <div style={{ display: "flex", gap: 8, paddingBottom: 2 }}>
+                <button
+                  onClick={handleAjustar}
+                  disabled={guardando || nuevaCantidad === "" || Number(nuevaCantidad) < 0 || delta === 0}
+                  style={{
+                    height: 38, padding: "0 18px", borderRadius: 8, border: "none", cursor: "pointer",
+                    background: T, color: "white", fontSize: 13, fontWeight: 700,
+                    opacity: (guardando || nuevaCantidad === "" || delta === 0) ? 0.5 : 1,
+                  }}
+                >{guardando ? "Guardando..." : "Confirmar"}</button>
+                <button
+                  onClick={() => { setAjustando(false); setNuevaCantidad(""); setErrorAjuste("") }}
+                  style={{ height: 38, padding: "0 14px", borderRadius: 8, border: "1px solid #e5e7eb", background: "white", color: "#6b7280", fontSize: 13, cursor: "pointer" }}
+                >Cancelar</button>
+              </div>
+              {errorAjuste && <p style={{ margin: 0, fontSize: 12, color: "#ef4444", alignSelf: "center" }}>{errorAjuste}</p>}
+            </div>
+          )}
         </div>
 
         {/* Tabla de logs */}
@@ -265,16 +377,27 @@ function LogModal({ linea, ubicacion, onClose }) {
               ) : linea.entradas.map(e => (
                 <tr key={e.id} style={{ borderBottom: "1px solid #f9fafb", opacity: e.eliminado ? 0.55 : 1 }}>
                   <td style={{ padding: "10px 16px", color: "#6b7280" }}>{fmtFecha(e.fecha)}</td>
-                  <td style={{ padding: "10px 16px", fontWeight: 600, color: e.eliminado ? "#9ca3af" : "#111827" }}>#{e.operario}</td>
-                  <td style={{ padding: "10px 16px", fontWeight: 700, color: e.eliminado ? "#9ca3af" : T, textDecoration: e.eliminado ? "line-through" : "none" }}>
-                    +{e.cantidad}
+                  <td style={{ padding: "10px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontWeight: 600, color: e.eliminado ? "#9ca3af" : "#111827" }}>
+                        {resolveNombre(e.operario, vendedoresMap)}
+                      </span>
+                      {e.operario !== "ADMIN" && (
+                        <span style={{ fontSize: 11, color: "#9ca3af", fontFamily: "monospace" }}>#{e.operario}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px 16px", fontWeight: 700, color: e.eliminado ? "#9ca3af" : (e.cantidad < 0 ? "#ef4444" : T), textDecoration: e.eliminado ? "line-through" : "none" }}>
+                    {e.cantidad > 0 ? `+${e.cantidad}` : e.cantidad}
                   </td>
                   <td style={{ padding: "10px 16px" }}>
                     {e.eliminado ? (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                         <span style={{ background: "#fef2f2", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>ELIMINADO</span>
-                        <span style={{ color: "#9ca3af", fontSize: 11 }}>por #{e.eliminado_por} · {fmtFecha(e.eliminado_en)}</span>
+                        <span style={{ color: "#9ca3af", fontSize: 11 }}>por {resolveNombre(e.eliminado_por, vendedoresMap)} · {fmtFecha(e.eliminado_en)}</span>
                       </span>
+                    ) : e.operario === "ADMIN" ? (
+                      <span style={{ background: "#fef9c3", color: "#854d0e", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>AJUSTE ADMIN</span>
                     ) : (
                       <span style={{ background: "#f0fdf4", color: "#16a34a", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>ACTIVO</span>
                     )}
@@ -327,7 +450,6 @@ function SeccionVendedores({ seccion, setSeccion }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "white", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      {/* Top nav */}
       <div style={{ background: "#1a1f2e", padding: "0 32px", height: 52, display: "flex", alignItems: "center", gap: 24 }}>
         <span style={{ color: "white", fontWeight: 700, fontSize: 15 }}>🍬 CandyMovil</span>
         <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
@@ -345,7 +467,6 @@ function SeccionVendedores({ seccion, setSeccion }) {
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>Vendedores</h1>
         <p style={{ fontSize: 13, color: "#9ca3af", marginBottom: 32 }}>Alta y baja de operarios que usan CandyMóvil</p>
 
-        {/* Formulario */}
         <form onSubmit={handleCrear} style={{
           background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12,
           padding: "24px", marginBottom: 32,
@@ -380,7 +501,6 @@ function SeccionVendedores({ seccion, setSeccion }) {
           {error && <p style={{ margin: "10px 0 0", fontSize: 13, color: "#e53935" }}>{error}</p>}
         </form>
 
-        {/* Tabla */}
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
