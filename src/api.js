@@ -11,32 +11,12 @@ export async function buscarArticulo(sku) {
   return data[0] || null
 }
 
-export async function crearRelevamiento(ubicacion_id, operario) {
-  const r = await fetch(`${BASE}/relevamiento/`, {
+export async function agregarStockLog(ubicacion_id, sku, cantidad, operario) {
+  const r = await fetch(`${BASE}/stock-log/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ubicacion_id, operario }),
+    body: JSON.stringify({ ubicacion_id, sku, cantidad, operario }),
   })
-  return r.json()
-}
-
-export async function agregarLinea(relevamiento_id, sku, cantidad) {
-  const r = await fetch(`${BASE}/relevamiento/${relevamiento_id}/lineas`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sku, cantidad }),
-  })
-  return r.json()
-}
-
-export async function getLineas(relevamiento_id) {
-  const r = await fetch(`${BASE}/relevamiento/${relevamiento_id}/lineas`)
-  return r.json()
-}
-
-export async function finalizarRelevamiento(relevamiento_id) {
-  const r = await fetch(`${BASE}/relevamiento/${relevamiento_id}/finalizar`, {
-    method: "PUT",
-  })
+  if (!r.ok) throw new Error("Error al guardar")
   return r.json()
 }

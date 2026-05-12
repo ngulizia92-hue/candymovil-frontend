@@ -1,24 +1,19 @@
 import { useState, useEffect } from "react"
-import { getUbicaciones, crearRelevamiento } from "./api"
+import { getUbicaciones } from "./api"
 
 export default function PantallaIngreso({ onIngresar }) {
   const [vendedor, setVendedor] = useState("")
   const [ubicaciones, setUbicaciones] = useState([])
   const [ubicacionId, setUbicacionId] = useState("")
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
   useEffect(() => { getUbicaciones().then(setUbicaciones).catch(() => {}) }, [])
 
-  async function handleIngresar() {
+  function handleIngresar() {
     if (!vendedor.trim()) { setError("Ingresá tu número de vendedor"); return }
     if (!ubicacionId) { setError("Seleccioná una ubicación"); return }
-    setLoading(true); setError("")
-    try {
-      const r = await crearRelevamiento(Number(ubicacionId), vendedor.trim())
-      onIngresar({ vendedor: vendedor.trim(), ubicacionId, relevamientoId: r.id })
-    } catch { setError("Error al conectar con el servidor") }
-    finally { setLoading(false) }
+    const ub = ubicaciones.find(u => String(u.id) === String(ubicacionId))
+    onIngresar({ vendedor: vendedor.trim(), ubicacion_id: Number(ubicacionId), ubicacion: ub?.nombre ?? "" })
   }
 
   return (
@@ -72,11 +67,11 @@ export default function PantallaIngreso({ onIngresar }) {
         {error && <p className="text-sm text-center font-medium" style={{ color: "#e53935" }}>{error}</p>}
 
         <button
-          onClick={handleIngresar} disabled={loading}
-          className="w-full py-4 rounded-2xl font-bold text-lg text-white shadow-lg transition-all disabled:opacity-50"
+          onClick={handleIngresar}
+          className="w-full py-4 rounded-2xl font-bold text-lg text-white shadow-lg transition-all"
           style={{ background: "#FFC107", color: "#1a2332" }}
         >
-          {loading ? "Ingresando..." : "INGRESAR"}
+          INGRESAR
         </button>
       </div>
     </div>
