@@ -187,7 +187,7 @@ export default function PantallaAdmin() {
                 <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.categoria}</td>
                 <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.clasificacion}</td>
                 <td style={{ padding: "11px 40px 11px 16px", textAlign: "right", fontWeight: 700, color: l.relevado ? T : "#d1d5db", fontSize: l.relevado ? 15 : 13 }}>
-                  {l.relevado ? l.cantidad : "—"}
+                  {l.relevado ? l.total : "—"}
                 </td>
               </tr>
             ))}
@@ -198,7 +198,7 @@ export default function PantallaAdmin() {
                 {lineasFiltradas.length} artículos · {lineasFiltradas.filter(l => l.relevado).length} relevados
               </td>
               <td style={{ padding: "12px 40px 12px 16px", textAlign: "right", fontWeight: 700, color: T, fontSize: 15 }}>
-                {lineasFiltradas.filter(l => l.relevado).reduce((s, l) => s + l.cantidad, 0).toLocaleString("es-AR")} u.
+                {lineasFiltradas.filter(l => l.relevado).reduce((s, l) => s + l.total, 0).toLocaleString("es-AR")} u.
               </td>
             </tr>
           </tfoot>
