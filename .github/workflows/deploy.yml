@@ -1,0 +1,12 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger EasyPanel deploy
+        run: curl -s "http://212.85.12.38:3000/api/deploy/aa3ad7f4508508f59a597450af6a7f58cee30068efd85662"
