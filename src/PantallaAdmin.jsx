@@ -44,34 +44,41 @@ export default function PantallaAdmin() {
   }, [ubicacion, filtroCat, filtroClasif, busqueda])
 
   if (loading) return (
-    <div className="min-h-svh flex items-center justify-center text-gray-400">Cargando...</div>
+    <div className="min-h-svh flex items-center justify-center" style={{ background: "#0f1623" }}>
+      <div className="text-sm" style={{ color: "#64748b" }}>Cargando...</div>
+    </div>
   )
 
   return (
-    <div className="min-h-svh bg-gray-50 flex flex-col">
+    <div className="min-h-svh flex flex-col" style={{ background: "#0f1623" }}>
 
       {/* Header */}
-      <div className="bg-gray-900 text-white px-5 py-4">
-        <div className="font-bold text-lg">Panel de Relevamientos</div>
-        <div className="text-gray-400 text-sm">Último relevamiento por ubicación</div>
+      <div className="px-6 pt-8 pb-5" style={{ background: "linear-gradient(160deg, #1a2540 0%, #0f1623 100%)" }}>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#3b82f6" }}>CandyMovil</p>
+        <h1 className="text-2xl font-bold text-white">Panel de Relevamientos</h1>
+        {ubicacion?.fecha && (
+          <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+            Último: {new Date(ubicacion.fecha).toLocaleString("es-AR")} — {ubicacion.operario}
+          </p>
+        )}
       </div>
 
-      {/* Tabs ubicaciones */}
-      <div className="bg-white border-b border-gray-200 overflow-x-auto">
-        <div className="flex">
+      {/* Tabs */}
+      <div className="overflow-x-auto" style={{ background: "#1a2332", borderBottom: "1px solid #243044" }}>
+        <div className="flex px-2">
           {datos.map((d, i) => (
             <button
               key={d.ubicacion_id}
               onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda("") }}
-              className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                tabActiva === i
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              className="px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2"
+              style={{
+                borderColor: tabActiva === i ? "#3b82f6" : "transparent",
+                color: tabActiva === i ? "#3b82f6" : "#64748b",
+              }}
             >
               {d.ubicacion}
               {d.lineas.length > 0 && (
-                <span className="ml-1 text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+                <span className="ml-2 text-xs rounded-full px-2 py-0.5" style={{ background: tabActiva === i ? "#1e3a5f" : "#243044", color: tabActiva === i ? "#3b82f6" : "#64748b" }}>
                   {d.lineas.length}
                 </span>
               )}
@@ -80,91 +87,79 @@ export default function PantallaAdmin() {
         </div>
       </div>
 
-      {ubicacion && (
-        <>
-          {/* Info relevamiento */}
-          {ubicacion.fecha && (
-            <div className="bg-blue-50 px-5 py-2 text-xs text-blue-700 flex gap-4">
-              <span>Operario: <strong>{ubicacion.operario}</strong></span>
-              <span>Fecha: <strong>{new Date(ubicacion.fecha).toLocaleString("es-AR")}</strong></span>
-              <span className={`font-semibold ${ubicacion.estado === "finalizado" ? "text-green-700" : "text-orange-600"}`}>
-                {ubicacion.estado}
-              </span>
-            </div>
-          )}
+      {/* Filtros */}
+      <div className="px-4 py-3 flex flex-wrap gap-2" style={{ background: "#1a2332", borderBottom: "1px solid #243044" }}>
+        <input
+          type="text"
+          placeholder="Buscar SKU o producto..."
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          className="rounded-xl px-3 py-2 text-sm text-white focus:outline-none flex-1 min-w-40"
+          style={{ background: "#0f1623", border: "1px solid #243044" }}
+        />
+        <select
+          value={filtroCat}
+          onChange={e => { setFiltroCat(e.target.value); setFiltroClasif("") }}
+          className="rounded-xl px-3 py-2 text-sm focus:outline-none"
+          style={{ background: "#0f1623", border: "1px solid #243044", color: filtroCat ? "#f1f5f9" : "#64748b" }}
+        >
+          <option value="">Categoría</option>
+          {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select
+          value={filtroClasif}
+          onChange={e => setFiltroClasif(e.target.value)}
+          className="rounded-xl px-3 py-2 text-sm focus:outline-none"
+          style={{ background: "#0f1623", border: "1px solid #243044", color: filtroClasif ? "#f1f5f9" : "#64748b" }}
+        >
+          <option value="">Clasificación</option>
+          {clasificaciones.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
 
-          {/* Filtros */}
-          <div className="bg-white px-4 py-3 flex flex-wrap gap-2 border-b border-gray-100">
-            <input
-              type="text"
-              placeholder="Buscar SKU o descripción..."
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-40 focus:outline-none focus:border-blue-400"
-            />
-            <select
-              value={filtroCat}
-              onChange={e => { setFiltroCat(e.target.value); setFiltroClasif("") }}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-400"
-            >
-              <option value="">Todas las categorías</option>
-              {categorias.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select
-              value={filtroClasif}
-              onChange={e => setFiltroClasif(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-400"
-            >
-              <option value="">Todas las clasificaciones</option>
-              {clasificaciones.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+      {/* Tabla */}
+      <div className="flex-1 overflow-auto">
+        {!ubicacion || lineasFiltradas.length === 0 ? (
+          <div className="text-center mt-16 text-sm" style={{ color: "#334155" }}>
+            {!ubicacion || ubicacion.lineas.length === 0
+              ? "No hay relevamiento cargado para esta ubicación"
+              : "No hay resultados con estos filtros"}
           </div>
-
-          {/* Tabla */}
-          <div className="flex-1 overflow-auto">
-            {lineasFiltradas.length === 0 ? (
-              <div className="text-center text-gray-400 mt-16 text-sm">
-                {ubicacion.lineas.length === 0
-                  ? "No hay relevamiento cargado para esta ubicación"
-                  : "No hay resultados con estos filtros"}
-              </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100 sticky top-0">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">SKU</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Descripción</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Categoría</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Clasificación</th>
-                    <th className="text-right px-4 py-3 font-semibold text-gray-600">Unidades</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lineasFiltradas.map((l, i) => (
-                    <tr key={l.sku} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="px-4 py-2 text-gray-500 font-mono text-xs">{l.sku}</td>
-                      <td className="px-4 py-2 text-gray-800">{l.descripcion}</td>
-                      <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">{l.categoria}</td>
-                      <td className="px-4 py-2 text-gray-500 hidden sm:table-cell">{l.clasificacion}</td>
-                      <td className="px-4 py-2 text-right font-bold text-blue-600">{l.cantidad}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-gray-100 sticky bottom-0">
-                  <tr>
-                    <td colSpan={4} className="px-4 py-2 text-sm text-gray-500">
-                      {lineasFiltradas.length} artículos
-                    </td>
-                    <td className="px-4 py-2 text-right font-bold text-gray-800">
-                      {lineasFiltradas.reduce((s, l) => s + l.cantidad, 0).toLocaleString("es-AR")}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            )}
-          </div>
-        </>
-      )}
+        ) : (
+          <table className="w-full text-sm">
+            <thead style={{ background: "#1a2332", position: "sticky", top: 0 }}>
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold" style={{ color: "#64748b" }}>SKU</th>
+                <th className="text-left px-4 py-3 font-semibold" style={{ color: "#64748b" }}>Descripción</th>
+                <th className="text-left px-4 py-3 font-semibold hidden md:table-cell" style={{ color: "#64748b" }}>Categoría</th>
+                <th className="text-left px-4 py-3 font-semibold hidden md:table-cell" style={{ color: "#64748b" }}>Clasificación</th>
+                <th className="text-right px-4 py-3 font-semibold" style={{ color: "#64748b" }}>Unidades</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lineasFiltradas.map((l, i) => (
+                <tr key={l.sku} style={{ background: i % 2 === 0 ? "#0f1623" : "#131c2e", borderBottom: "1px solid #1a2332" }}>
+                  <td className="px-4 py-3 font-mono text-xs" style={{ color: "#3b82f6" }}>{l.sku}</td>
+                  <td className="px-4 py-3 font-medium text-white">{l.descripcion}</td>
+                  <td className="px-4 py-3 hidden md:table-cell" style={{ color: "#64748b" }}>{l.categoria}</td>
+                  <td className="px-4 py-3 hidden md:table-cell" style={{ color: "#64748b" }}>{l.clasificacion}</td>
+                  <td className="px-4 py-3 text-right font-bold text-xl" style={{ color: "#f59e0b" }}>{l.cantidad}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot style={{ background: "#1a2332", position: "sticky", bottom: 0 }}>
+              <tr>
+                <td colSpan={4} className="px-4 py-3 text-sm" style={{ color: "#64748b" }}>
+                  {lineasFiltradas.length} artículos
+                </td>
+                <td className="px-4 py-3 text-right font-bold text-white">
+                  {lineasFiltradas.reduce((s, l) => s + l.cantidad, 0).toLocaleString("es-AR")}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        )}
+      </div>
     </div>
   )
 }
