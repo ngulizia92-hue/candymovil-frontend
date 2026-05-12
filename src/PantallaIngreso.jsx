@@ -1,79 +1,87 @@
-import { useState, useEffect } from "react"
-import { getUbicaciones } from "./api"
+import { useState } from "react"
+import { T } from "./theme"
+
+const IcUser = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/>
+  </svg>
+)
 
 export default function PantallaIngreso({ onIngresar }) {
   const [vendedor, setVendedor] = useState("")
-  const [ubicaciones, setUbicaciones] = useState([])
-  const [ubicacionId, setUbicacionId] = useState("")
+  const [pin, setPin] = useState("")
   const [error, setError] = useState("")
-
-  useEffect(() => { getUbicaciones().then(setUbicaciones).catch(() => {}) }, [])
 
   function handleIngresar() {
     if (!vendedor.trim()) { setError("Ingresá tu número de vendedor"); return }
-    if (!ubicacionId) { setError("Seleccioná una ubicación"); return }
-    const ub = ubicaciones.find(u => String(u.id) === String(ubicacionId))
-    onIngresar({ vendedor: vendedor.trim(), ubicacion_id: Number(ubicacionId), ubicacion: ub?.nombre ?? "" })
+    onIngresar({ vendedor: vendedor.trim() })
   }
 
   return (
-    <div className="min-h-svh flex flex-col" style={{ background: "#00ACC1" }}>
+    <div style={{ minHeight: "100svh", display: "flex", flexDirection: "column", background: T.heroBg, position: "relative", overflow: "hidden" }}>
+      {/* Decorative circles */}
+      <div style={{ position: "absolute", top: -80, right: -60, width: 220, height: 220, borderRadius: "50%", background: T.heroDecor1 }} />
+      <div style={{ position: "absolute", bottom: 160, left: -90, width: 180, height: 180, borderRadius: "50%", background: T.heroDecor2 }} />
+      <div style={{ position: "absolute", top: 300, right: 30, width: 80, height: 80, borderRadius: "50%", background: T.heroDecor3 }} />
 
-      {/* Top */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6">
-        <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mb-4 shadow-lg">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00ACC1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-            <rect x="9" y="3" width="6" height="4" rx="1"/>
-            <path d="M9 12h6M9 16h4"/>
-          </svg>
+      <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 28px 0", gap: 28 }}>
+        {/* Logo */}
+        <div style={{
+          width: 100, height: 100, borderRadius: 28,
+          background: T.logoBg, color: T.logoInk,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 14px 40px rgba(0,0,0,0.18)", transform: "rotate(-6deg)",
+        }}>
+          <span style={{ fontSize: 54, fontWeight: 800, letterSpacing: "-3px", fontFamily: T.brand }}>cm</span>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-1">CandyMovil</h1>
-        <p className="text-sm" style={{ color: "#b2ebf2" }}>Relevamiento de stock</p>
+
+        <div style={{ textAlign: "center", color: "#fff" }}>
+          <div style={{ fontSize: 13, letterSpacing: "3px", fontWeight: 700, opacity: 0.75, marginBottom: 6 }}>BIENVENIDO A</div>
+          <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-1.2px", fontFamily: T.brand, lineHeight: 1 }}>CandyMóvil</div>
+          <div style={{ fontSize: 14, marginTop: 10, opacity: 0.85 }}>Relevamiento de stock</div>
+        </div>
+
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
+          <PillInput icon={<IcUser />} value={vendedor} onChange={setVendedor} placeholder="Número de vendedor" type="number" inputMode="numeric" onEnter={handleIngresar} />
+          <PillInput icon={<span style={{ fontSize: 16 }}>🔒</span>} value={pin} onChange={setPin} placeholder="PIN" type="password" onEnter={handleIngresar} />
+        </div>
+
+        {error && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 600, margin: 0 }}>{error}</p>}
       </div>
 
-      {/* Card inferior */}
-      <div className="rounded-t-3xl px-6 pt-8 pb-10 flex flex-col gap-5" style={{ background: "#f0f4f8" }}>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "#00ACC1" }}>Número de vendedor</label>
-          <input
-            type="number" inputMode="numeric" placeholder="Ej: 12"
-            value={vendedor}
-            onChange={e => setVendedor(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleIngresar()}
-            className="w-full rounded-2xl px-4 py-4 text-xl font-bold bg-white focus:outline-none shadow-sm"
-            style={{ border: "2px solid #e0f7fa", color: "#1a2332" }}
-            onFocus={e => e.target.style.borderColor = "#00ACC1"}
-            onBlur={e => e.target.style.borderColor = "#e0f7fa"}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "#00ACC1" }}>Ubicación</label>
-          <select
-            value={ubicacionId}
-            onChange={e => setUbicacionId(e.target.value)}
-            className="w-full rounded-2xl px-4 py-4 text-base font-semibold bg-white focus:outline-none shadow-sm appearance-none"
-            style={{ border: "2px solid #e0f7fa", color: ubicacionId ? "#1a2332" : "#90a4ae" }}
-            onFocus={e => e.target.style.borderColor = "#00ACC1"}
-            onBlur={e => e.target.style.borderColor = "#e0f7fa"}
-          >
-            <option value="">Seleccioná una ubicación</option>
-            {ubicaciones.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-          </select>
-        </div>
-
-        {error && <p className="text-sm text-center font-medium" style={{ color: "#e53935" }}>{error}</p>}
-
-        <button
-          onClick={handleIngresar}
-          className="w-full py-4 rounded-2xl font-bold text-lg text-white shadow-lg transition-all"
-          style={{ background: "#FFC107", color: "#1a2332" }}
-        >
-          INGRESAR
-        </button>
+      {/* Bottom card */}
+      <div style={{ position: "relative", padding: "28px 28px 40px" }}>
+        <button onClick={handleIngresar} style={{
+          width: "100%", height: 58, borderRadius: 999, border: "none",
+          background: T.cta, color: T.ctaInk,
+          fontSize: 17, fontWeight: 800, letterSpacing: "0.4px", cursor: "pointer",
+          boxShadow: "0 12px 28px " + T.ctaShadow,
+        }}>INGRESAR</button>
       </div>
+    </div>
+  )
+}
+
+function PillInput({ icon, value, onChange, placeholder, type = "text", inputMode, onEnter }) {
+  return (
+    <div style={{
+      height: 54, borderRadius: 999, background: T.inputBg,
+      display: "flex", alignItems: "center", padding: "0 6px 0 22px", gap: 12,
+      color: T.inputInk,
+    }}>
+      {icon && <span style={{ color: T.inputIcon, display: "inline-flex" }}>{icon}</span>}
+      <input
+        type={type} value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={e => e.key === "Enter" && onEnter?.()}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        style={{
+          flex: 1, background: "transparent", border: "none", outline: "none",
+          color: T.inputInk, fontSize: 16, fontWeight: 600,
+          letterSpacing: type === "password" ? "4px" : "normal",
+        }}
+      />
     </div>
   )
 }

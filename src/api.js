@@ -20,3 +20,17 @@ export async function agregarStockLog(ubicacion_id, sku, cantidad, operario) {
   if (!r.ok) throw new Error("Error al guardar")
   return r.json()
 }
+
+export async function getStockLogHoy(operario) {
+  const r = await fetch(`${BASE}/stock-log/?operario=${encodeURIComponent(operario)}`)
+  if (!r.ok) throw new Error("Error al obtener historial")
+  return r.json()
+}
+
+export async function deleteStockLog(id, operario) {
+  const r = await fetch(`${BASE}/stock-log/${id}?operario=${encodeURIComponent(operario)}`, {
+    method: "DELETE",
+  })
+  if (!r.ok) throw new Error("Error al eliminar")
+  return r.json()
+}

@@ -1,163 +1,265 @@
 import { useState, useRef } from "react"
+import { T } from "./theme"
 import { buscarArticulo, agregarStockLog } from "./api"
 
-export default function PantallaRelevamiento({ sesion, onVolver }) {
+const IcSearch = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+  </svg>
+)
+const IcPin = ({ s = 22 }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-8 8-13a8 8 0 1 0-16 0c0 5 8 13 8 13z"/><circle cx="12" cy="9" r="2.8"/>
+  </svg>
+)
+const IcCheck = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 12l5 5L20 6"/>
+  </svg>
+)
+
+function HeaderBlock({ children }) {
+  return (
+    <div style={{
+      background: T.header, color: T.headerInk,
+      padding: "10px 20px 20px", borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
+      position: "relative", overflow: "hidden", flexShrink: 0,
+    }}>
+      <div style={{ position: "absolute", top: -40, right: -30, width: 130, height: 130, borderRadius: "50%", background: T.headerDecor }} />
+      <div style={{ position: "relative" }}>{children}</div>
+    </div>
+  )
+}
+
+function Keypad({ onKey }) {
+  const rows = [["1","2","3"],["4","5","6"],["7","8","9"],["clr","0","del"]]
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8,
+      background: T.keypadBg, padding: 10, borderRadius: 22, flexShrink: 0,
+    }}>
+      {rows.flat().map(k => {
+        const special = k === "clr" || k === "del"
+        return (
+          <button key={k} onClick={() => onKey(k)} style={{
+            height: 52, borderRadius: 16, border: "none", cursor: "pointer",
+            background: special ? T.keySpecialBg : T.keyBg,
+            color: special ? T.keySpecialInk : T.ink,
+            fontSize: special ? 18 : 24, fontWeight: 800, fontFamily: T.brand,
+          }}>
+            {k === "clr" ? "C" : k === "del" ? "⌫" : k}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation }) {
   const [sku, setSku] = useState("")
   const [articulo, setArticulo] = useState(null)
-  const [cantidad, setCantidad] = useState("")
-  const [entradas, setEntradas] = useState([])
+  const [qty, setQty] = useState("")
   const [buscando, setBuscando] = useState(false)
   const [guardando, setGuardando] = useState(false)
-  const [error, setError] = useState("")
   const [noEncontrado, setNoEncontrado] = useState(false)
-  const [confirmacion, setConfirmacion] = useState(null)
-  const cantidadRef = useRef(null)
+  const [error, setError] = useState("")
   const skuRef = useRef(null)
 
   async function handleBuscar() {
-    if (!sku.trim()) return
-    setBuscando(true); setError(""); setNoEncontrado(false); setArticulo(null); setCantidad(""); setConfirmacion(null)
+    const q = sku.trim()
+    if (!q) return
+    setBuscando(true); setArticulo(null); setNoEncontrado(false); setQty(""); setError("")
     try {
-      const art = await buscarArticulo(sku.trim())
-      if (art) { setArticulo(art); setTimeout(() => cantidadRef.current?.focus(), 100) }
+      const art = await buscarArticulo(q)
+      if (art) setArticulo(art)
       else setNoEncontrado(true)
     } catch { setError("Error al buscar") }
     finally { setBuscando(false) }
   }
 
-  async function handleAgregar() {
-    if (!articulo || !cantidad) return
-    setGuardando(true); setError("")
+  function onKey(k) {
+    if (k === "del") return setQty(q => q.slice(0, -1))
+    if (k === "clr") return setQty("")
+    if (qty.length >= 4) return
+    setQty(q => (q + k).replace(/^0+(?=\d)/, ""))
+  }
+
+  async function handleConfirmar() {
+    if (!articulo || !qty || qty === "0") return
+    setGuardando(true)
     try {
-      const entry = await agregarStockLog(sesion.ubicacion_id, articulo.sku, Number(cantidad), sesion.vendedor)
-      setEntradas(prev => [entry, ...prev])
-      setConfirmacion({ sku: articulo.sku, descripcion: articulo.descripcion, cantidad: Number(cantidad) })
-      setSku(""); setArticulo(null); setCantidad(""); setNoEncontrado(false)
+      await agregarStockLog(sesion.ubicacion_id, articulo.sku, Number(qty), sesion.vendedor)
+      conteo.agregar(articulo.sku, articulo.descripcion, Number(qty))
+      setQty(""); setSku(""); setArticulo(null); setNoEncontrado(false)
       setTimeout(() => skuRef.current?.focus(), 100)
     } catch { setError("Error al guardar") }
     finally { setGuardando(false) }
   }
 
+  const canConfirm = articulo && qty && qty !== "0" && !guardando
+
   return (
-    <div className="min-h-svh flex flex-col" style={{ background: "#f0f4f8" }}>
-
-      {/* Header */}
-      <div className="px-5 pt-8 pb-5" style={{ background: "#00ACC1" }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-white opacity-70">CandyMovil</p>
-            <h1 className="text-2xl font-bold text-white">{sesion.ubicacion}</h1>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-white opacity-70">Vendedor</div>
-            <div className="text-2xl font-bold" style={{ color: "#FFC107" }}>{sesion.vendedor}</div>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl px-5 py-3 flex items-center justify-between bg-white bg-opacity-20">
-          <span className="text-sm text-white font-medium">Artículos cargados hoy</span>
-          <span className="text-3xl font-bold text-white">{entradas.length}</span>
-        </div>
-      </div>
-
-      {/* Buscador */}
-      <div className="px-5 py-4 flex flex-col gap-3">
-        <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "#00ACC1" }}>SKU / Código</label>
-        <div className="flex gap-2">
-          <input
-            ref={skuRef}
-            type="text" placeholder="Ej: ABC123"
-            value={sku}
-            onChange={e => { setSku(e.target.value.toUpperCase()); setArticulo(null); setNoEncontrado(false); setConfirmacion(null) }}
-            onKeyDown={e => e.key === "Enter" && handleBuscar()}
-            className="flex-1 rounded-2xl px-4 py-4 text-lg font-bold bg-white focus:outline-none shadow-sm uppercase"
-            style={{ border: "2px solid #e0f7fa", color: "#1a2332" }}
-            onFocus={e => e.target.style.borderColor = "#00ACC1"}
-            onBlur={e => e.target.style.borderColor = "#e0f7fa"}
-            autoCapitalize="characters" autoCorrect="off"
-          />
-          <button
-            onClick={handleBuscar} disabled={buscando || !sku.trim()}
-            className="px-6 rounded-2xl font-bold text-white shadow-sm disabled:opacity-40"
-            style={{ background: "#00ACC1" }}
-          >
-            {buscando ? "..." : "Buscar"}
-          </button>
-        </div>
-
-        {/* Confirmación */}
-        {confirmacion && (
-          <div className="rounded-2xl px-4 py-3 flex items-center gap-3" style={{ background: "#e8f5e9", border: "2px solid #66bb6a" }}>
-            <span style={{ fontSize: 22 }}>✓</span>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <HeaderBlock>
+        {/* Top row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: "50%",
+              background: T.avatarBg, color: T.avatarInk,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 800, fontSize: 14, fontFamily: T.brand,
+              border: T.avatarBorder, flexShrink: 0,
+            }}>#{sesion.vendedor}</div>
             <div>
-              <div className="text-xs font-bold" style={{ color: "#388e3c" }}>{confirmacion.sku}</div>
-              <div className="text-sm font-semibold" style={{ color: "#1a2332" }}>{confirmacion.descripcion}</div>
-              <div className="text-xs" style={{ color: "#388e3c" }}>{confirmacion.cantidad} unidades guardadas</div>
+              <div style={{ fontSize: 10, letterSpacing: "2px", fontWeight: 800, opacity: 0.85 }}>VENDEDOR</div>
+              <div style={{ fontSize: 18, fontWeight: 800, fontFamily: T.brand, letterSpacing: "-0.4px", lineHeight: 1 }}>Relevamiento</div>
             </div>
           </div>
-        )}
+          <div style={{
+            background: T.accent, color: T.accentInk,
+            borderRadius: 999, padding: "6px 14px", fontWeight: 800, fontSize: 13, fontFamily: T.brand,
+          }}>{conteo.total} items</div>
+        </div>
 
-        {/* Artículo encontrado */}
-        {articulo && (
-          <div className="rounded-2xl p-4 bg-white shadow-sm" style={{ border: "2px solid #00ACC1" }}>
-            <div className="text-xs font-bold mb-1" style={{ color: "#00ACC1" }}>{articulo.sku}</div>
-            <div className="font-bold text-base mb-4" style={{ color: "#1a2332" }}>{articulo.descripcion}</div>
-            <label className="text-xs font-bold uppercase tracking-widest" style={{ color: "#00ACC1" }}>¿Cuántas unidades?</label>
-            <div className="flex gap-2 mt-2">
-              <input
-                ref={cantidadRef} type="number" inputMode="decimal" placeholder="0"
-                value={cantidad}
-                onChange={e => setCantidad(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleAgregar()}
-                className="flex-1 rounded-2xl px-4 py-3 text-4xl font-bold text-center focus:outline-none"
-                style={{ border: "2px solid #00ACC1", color: "#1a2332", background: "#e0f7fa" }}
-              />
-              <button
-                onClick={handleAgregar} disabled={guardando || !cantidad}
-                className="px-6 rounded-2xl font-bold text-lg disabled:opacity-40 shadow-sm"
-                style={{ background: "#FFC107", color: "#1a2332" }}
-              >
-                {guardando ? "..." : "✓"}
-              </button>
+        {/* Location card */}
+        <button onClick={onChangeLocation} style={{
+          width: "100%", cursor: "pointer",
+          background: "rgba(255,255,255,0.96)", border: "none", borderRadius: 20,
+          padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
+          textAlign: "left", boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 16, background: T.skuBg, color: T.primary,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}><IcPin s={26} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 0 3px rgba(34,197,94,0.18)", display: "inline-block" }} />
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.8px", color: T.primary }}>UBICACIÓN ACTUAL</span>
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.ink, fontFamily: T.brand, letterSpacing: "-0.5px", lineHeight: 1.1 }}>
+              {sesion.ubicacion}
             </div>
           </div>
-        )}
-
-        {noEncontrado && (
-          <div className="text-center text-sm font-medium py-3 rounded-2xl bg-white" style={{ color: "#e53935" }}>
-            No se encontró el SKU "{sku}"
-          </div>
-        )}
-        {error && <div className="text-center text-sm font-medium" style={{ color: "#e53935" }}>{error}</div>}
-      </div>
-
-      {/* Lista de entradas de esta sesión */}
-      <div className="flex-1 px-5 pb-8 flex flex-col gap-2">
-        {entradas.length === 0 ? (
-          <div className="text-center mt-8 text-sm font-medium" style={{ color: "#b0bec5" }}>
-            Todavía no cargaste ningún artículo
-          </div>
-        ) : entradas.map((e, i) => (
-          <div key={e.id ?? i} className="rounded-2xl px-4 py-3 bg-white shadow-sm flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold" style={{ color: "#00ACC1" }}>{e.sku}</div>
-              <div className="text-sm font-semibold truncate" style={{ color: "#1a2332" }}>{e.descripcion}</div>
-            </div>
-            <div className="text-2xl font-bold ml-4 shrink-0" style={{ color: "#FFC107" }}>{e.cantidad}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Volver */}
-      <div className="px-5 py-4 bg-white" style={{ borderTop: "1px solid #e0f7fa" }}>
-        <button
-          onClick={onVolver}
-          className="w-full py-3 rounded-2xl font-bold text-sm"
-          style={{ background: "#f0f4f8", color: "#607d8b", border: "1px solid #cfd8dc" }}
-        >
-          Cambiar ubicación / vendedor
+          <div style={{
+            color: T.primary, fontWeight: 800, fontSize: 11, letterSpacing: "1.2px",
+            background: T.skuBg, padding: "5px 10px", borderRadius: 999, flexShrink: 0,
+          }}>CAMBIAR</div>
         </button>
+      </HeaderBlock>
+
+      {/* SKU search */}
+      <div style={{ padding: "14px 18px 8px" }}>
+        <div style={{
+          background: T.card, border: T.cardBorder, borderRadius: 999,
+          height: 54, display: "flex", alignItems: "center", padding: "0 6px 0 20px",
+          gap: 10, boxShadow: T.searchShadow,
+        }}>
+          <span style={{ color: T.primary, display: "inline-flex" }}><IcSearch /></span>
+          <input
+            ref={skuRef} autoFocus
+            value={sku}
+            onChange={e => { setSku(e.target.value.toUpperCase()); setArticulo(null); setNoEncontrado(false) }}
+            onKeyDown={e => e.key === "Enter" && handleBuscar()}
+            placeholder="SKU o código del producto"
+            autoCapitalize="characters" autoCorrect="off"
+            style={{
+              flex: 1, background: "transparent", border: "none", outline: "none",
+              fontSize: 15, fontWeight: 700, color: T.ink, letterSpacing: "0.5px",
+            }}
+          />
+          <button onClick={handleBuscar} disabled={buscando || !sku.trim()} style={{
+            height: 42, padding: "0 16px", borderRadius: 999, border: "none",
+            background: buscando || !sku.trim() ? T.disabledBg : T.primary,
+            color: buscando || !sku.trim() ? T.disabledInk : T.primaryInk,
+            fontWeight: 800, fontSize: 12, cursor: "pointer", letterSpacing: "0.5px",
+          }}>{buscando ? "..." : "BUSCAR"}</button>
+        </div>
       </div>
+
+      {/* Main content area */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", padding: "0 18px 12px", gap: 10 }}>
+        {articulo ? (
+          <>
+            {/* Product card */}
+            <div style={{
+              background: T.card, border: T.cardBorderStrong, borderRadius: 20,
+              padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 10, flexShrink: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 16, background: T.skuBg, color: T.primary,
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "1px", opacity: 0.7 }}>SKU</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, fontFamily: T.brand, lineHeight: 1 }}>{articulo.sku}</div>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.6px", color: T.primary, textTransform: "uppercase" }}>
+                    {articulo.categoria || articulo.familia || ""}
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: T.ink, lineHeight: 1.2, marginTop: 2, fontFamily: T.brand }}>
+                    {articulo.descripcion}
+                  </div>
+                </div>
+              </div>
+              <div style={{
+                background: T.qtyBg, borderRadius: 14, padding: "8px 14px",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "2px", color: T.primary }}>¿CUÁNTAS UNIDADES?</div>
+                <div style={{
+                  fontSize: 32, fontWeight: 800, fontFamily: T.brand, letterSpacing: "-1px", lineHeight: 1,
+                  color: qty ? T.ink : T.muted,
+                }}>{qty || "0"}</div>
+              </div>
+            </div>
+
+            <Keypad onKey={onKey} />
+
+            <button onClick={handleConfirmar} disabled={!canConfirm} style={{
+              height: 54, borderRadius: 999, border: "none",
+              background: canConfirm ? T.accent : T.disabledBg,
+              color: canConfirm ? T.accentInk : T.disabledInk,
+              fontSize: 16, fontWeight: 800, letterSpacing: "0.4px", cursor: canConfirm ? "pointer" : "default",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              boxShadow: canConfirm ? "0 10px 22px " + T.accentShadow : "none",
+              flexShrink: 0,
+            }}>
+              <IcCheck /> {guardando ? "GUARDANDO..." : "CONFIRMAR CARGA"}
+            </button>
+
+            {error && <div style={{ textAlign: "center", fontSize: 13, color: "#e53935", fontWeight: 600 }}>{error}</div>}
+          </>
+        ) : (
+          <EmptyState sku={sku} noEncontrado={noEncontrado} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function EmptyState({ sku, noEncontrado }) {
+  if (noEncontrado) {
+    return (
+      <div style={{
+        background: T.card, border: T.cardBorder, borderRadius: 20,
+        padding: "28px 22px", textAlign: "center", color: T.muted, flexShrink: 0,
+      }}>
+        <div style={{ fontSize: 38, marginBottom: 8 }}>🤔</div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: T.ink, fontFamily: T.brand }}>SKU no encontrado</div>
+        <div style={{ fontSize: 12.5, marginTop: 4 }}>Revisá el código e intentá de nuevo.</div>
+      </div>
+    )
+  }
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px 22px", textAlign: "center", color: T.muted, gap: 12 }}>
+      <div style={{ width: 88, height: 88, borderRadius: "50%", background: T.skuBg, color: T.primary, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+        <IcSearch />
+      </div>
+      <div style={{ fontSize: 17, fontWeight: 800, color: T.ink, fontFamily: T.brand, letterSpacing: "-0.3px" }}>Buscá un producto</div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.4, maxWidth: 260 }}>Ingresá el SKU en el buscador y presioná BUSCAR.</div>
     </div>
   )
 }
