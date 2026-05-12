@@ -14,6 +14,7 @@ export default function PantallaAdmin() {
   const [busqueda, setBusqueda] = useState("")
   const [soloRelevados, setSoloRelevados] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [expandedSku, setExpandedSku] = useState(null)
 
   useEffect(() => {
     fetch(`${API}/admin/resumen`)
@@ -94,7 +95,7 @@ export default function PantallaAdmin() {
         <div style={{ borderBottom: "1px solid #e5e7eb", display: "flex", gap: 0, marginBottom: 0 }}>
           {datos.map((d, i) => (
             <button key={d.ubicacion_id}
-              onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false) }}
+              onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false); setExpandedSku(null) }}
               style={{
                 padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer",
                 background: "none", border: "none",
@@ -180,17 +181,68 @@ export default function PantallaAdmin() {
           <tbody>
             {lineasFiltradas.length === 0 ? (
               <tr><td colSpan={5} style={{ textAlign: "center", padding: "80px", color: "#9ca3af", fontSize: 14 }}>Sin resultados</td></tr>
-            ) : lineasFiltradas.map((l, i) => (
-              <tr key={l.sku} style={{ background: i % 2 === 0 ? "white" : "#fafafa", borderBottom: "1px solid #f9fafb" }}>
-                <td style={{ padding: "11px 40px", fontFamily: "monospace", fontSize: 13, color: "#374151", fontWeight: 500 }}>{l.sku}</td>
-                <td style={{ padding: "11px 16px", color: l.relevado ? T : "#111827", fontWeight: l.relevado ? 600 : 400 }}>{l.descripcion}</td>
-                <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.categoria}</td>
-                <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.clasificacion}</td>
-                <td style={{ padding: "11px 40px 11px 16px", textAlign: "right", fontWeight: 700, color: l.relevado ? T : "#d1d5db", fontSize: l.relevado ? 15 : 13 }}>
-                  {l.relevado ? l.total : "—"}
-                </td>
-              </tr>
-            ))}
+            ) : lineasFiltradas.map((l, i) => {
+              const isExpanded = expandedSku === l.sku
+              return (
+                <>
+                  <tr
+                    key={l.sku}
+                    onClick={() => l.relevado && setExpandedSku(isExpanded ? null : l.sku)}
+                    style={{
+                      background: isExpanded ? "#f0fafb" : i % 2 === 0 ? "white" : "#fafafa",
+                      borderBottom: isExpanded ? "none" : "1px solid #f9fafb",
+                      cursor: l.relevado ? "pointer" : "default",
+                    }}
+                  >
+                    <td style={{ padding: "11px 40px", fontFamily: "monospace", fontSize: 13, color: "#374151", fontWeight: 500 }}>{l.sku}</td>
+                    <td style={{ padding: "11px 16px", color: l.relevado ? T : "#111827", fontWeight: l.relevado ? 600 : 400 }}>{l.descripcion}</td>
+                    <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.categoria}</td>
+                    <td style={{ padding: "11px 16px", color: "#6b7280" }}>{l.clasificacion}</td>
+                    <td style={{ padding: "11px 40px 11px 16px", textAlign: "right", fontWeight: 700, color: l.relevado ? T : "#d1d5db", fontSize: l.relevado ? 15 : 13 }}>
+                      {l.relevado ? (
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+                          {l.total}
+                          <span style={{ fontSize: 11, color: T, fontWeight: 700 }}>{isExpanded ? "▲" : "▼"}</span>
+                        </span>
+                      ) : "—"}
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr key={l.sku + "_logs"} style={{ background: "#f0fafb", borderBottom: "1px solid #e0f7fa" }}>
+                      <td colSpan={5} style={{ padding: "0 40px 16px" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ borderBottom: "1px solid #e0f7fa" }}>
+                              <th style={{ textAlign: "left", padding: "8px 12px 6px 0", fontSize: 11, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>Operario</th>
+                              <th style={{ textAlign: "left", padding: "8px 12px 6px", fontSize: 11, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>Fecha y hora</th>
+                              <th style={{ textAlign: "right", padding: "8px 0 6px 12px", fontSize: 11, fontWeight: 700, color: T, textTransform: "uppercase", letterSpacing: "0.05em" }}>Unidades</th>
+                              <th style={{ textAlign: "left", padding: "8px 0 6px 12px", fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>Estado</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {l.entradas.map((e, ei) => (
+                              <tr key={e.id} style={{ borderBottom: "1px solid #f0f9fa", opacity: e.eliminado ? 0.6 : 1 }}>
+                                <td style={{ padding: "7px 12px 7px 0", fontWeight: 600, color: e.eliminado ? "#9ca3af" : "#111827" }}>#{e.operario}</td>
+                                <td style={{ padding: "7px 12px", color: "#6b7280" }}>{new Date(e.fecha).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
+                                <td style={{ padding: "7px 0 7px 12px", textAlign: "right", fontWeight: 700, color: e.eliminado ? "#9ca3af" : T, textDecoration: e.eliminado ? "line-through" : "none" }}>{e.cantidad}</td>
+                                <td style={{ padding: "7px 0 7px 12px" }}>
+                                  {e.eliminado
+                                    ? <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 700 }}>
+                                        Eliminado por #{e.eliminado_por} · {new Date(e.eliminado_en).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                                      </span>
+                                    : <span style={{ fontSize: 11, color: "#22c55e", fontWeight: 600 }}>Activo</span>
+                                  }
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )
+            })}
           </tbody>
           <tfoot>
             <tr style={{ borderTop: "2px solid #f3f4f6", background: "#fafafa" }}>
