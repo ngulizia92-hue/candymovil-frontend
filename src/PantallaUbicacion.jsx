@@ -47,7 +47,7 @@ export default function PantallaUbicacion({ sesion, onContinuar, onBack, onboard
       <div style={{ position: "absolute", bottom: 160, left: -90, width: 180, height: 180, borderRadius: "50%", background: T.heroDecor2 }} />
       <div style={{ position: "absolute", top: 340, right: 30, width: 80, height: 80, borderRadius: "50%", background: T.heroDecor3 }} />
 
-      <div style={{ position: "relative", padding: "60px 28px 0" }}>
+      <div style={{ position: "relative", padding: "52px 28px 0" }}>
         <button onClick={onBack} style={{
           width: 42, height: 42, borderRadius: "50%",
           background: "rgba(255,255,255,0.18)", color: "#fff",
@@ -56,22 +56,22 @@ export default function PantallaUbicacion({ sesion, onContinuar, onBack, onboard
         }}><IcBack /></button>
       </div>
 
-      <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px", gap: 26 }}>
+      <div style={{ position: "relative", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "16px 28px 40px", gap: 20 }}>
         {/* Pin icon */}
         <div style={{
-          width: 96, height: 96, borderRadius: 28,
+          width: 80, height: 80, borderRadius: 24,
           background: T.logoBg, color: T.logoInk,
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "0 14px 40px rgba(0,0,0,0.18)", transform: "rotate(-6deg)",
         }}>
-          <IcPin s={48} />
+          <IcPin s={40} />
         </div>
 
         <div style={{ textAlign: "center", color: "#fff" }}>
           <div style={{ fontSize: 12, letterSpacing: "3px", fontWeight: 700, opacity: 0.75, marginBottom: 6 }}>
             {onboarding ? `HOLA, VENDEDOR ${sesion.vendedor}` : "TU UBICACIÓN"}
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.8px", fontFamily: T.brand, lineHeight: 1 }}>
+          <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.8px", fontFamily: T.brand, lineHeight: 1 }}>
             {onboarding ? "Elegí tu ubicación" : "Cambiar ubicación"}
           </div>
           <div style={{ fontSize: 14, marginTop: 10, opacity: 0.85 }}>
@@ -142,10 +142,9 @@ export default function PantallaUbicacion({ sesion, onContinuar, onBack, onboard
           color: current ? T.ctaInk : T.disabledInk,
           fontSize: 17, fontWeight: 800, letterSpacing: "0.4px", cursor: current ? "pointer" : "default",
           boxShadow: current ? "0 12px 28px " + T.ctaShadow : "none",
-        }}>{onboarding ? "COMENZAR JORNADA" : "GUARDAR UBICACIÓN"}</button>
+        }}>{onboarding ? "COMENZAR" : "GUARDAR UBICACIÓN"}</button>
       </div>
 
-      <div style={{ height: 40 }} />
     </div>
   )
 }
