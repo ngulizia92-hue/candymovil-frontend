@@ -56,7 +56,7 @@ export default function PantallaUbicacion({ sesion, onContinuar, onBack, onboard
         }}><IcBack /></button>
       </div>
 
-      <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px 20px", gap: 20 }}>
+      <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "24px 28px 20px", gap: 20 }}>
         {/* Pin icon */}
         <div style={{
           width: 80, height: 80, borderRadius: 24,
