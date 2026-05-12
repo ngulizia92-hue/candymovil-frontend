@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { T } from "./theme"
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
+
 const IcUser = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/>
@@ -11,10 +13,26 @@ export default function PantallaIngreso({ onIngresar }) {
   const [vendedor, setVendedor] = useState("")
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
+  const [cargando, setCargando] = useState(false)
 
-  function handleIngresar() {
-    if (!vendedor.trim()) { setError("Ingresá tu número de vendedor"); return }
-    onIngresar({ vendedor: vendedor.trim() })
+  async function handleIngresar() {
+    if (!vendedor.trim() || !pin.trim()) { setError("Ingresá tu número y PIN"); return }
+    setCargando(true); setError("")
+    try {
+      const r = await fetch(`${API}/vendedores/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numero: vendedor.trim(), pin: pin.trim() }),
+      })
+      if (r.status === 401) { setError("Número o PIN incorrecto"); return }
+      if (!r.ok) { setError("Error al conectar. Intentá de nuevo."); return }
+      const data = await r.json()
+      onIngresar({ vendedor: data.numero, nombre: data.nombre })
+    } catch {
+      setError("Sin conexión con el servidor")
+    } finally {
+      setCargando(false)
+    }
   }
 
   return (
@@ -46,17 +64,18 @@ export default function PantallaIngreso({ onIngresar }) {
           <PillInput icon={<span style={{ fontSize: 16 }}>🔒</span>} value={pin} onChange={setPin} placeholder="PIN" type="password" onEnter={handleIngresar} />
         </div>
 
-        {error && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 600, margin: 0 }}>{error}</p>}
+        {error && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 600, margin: 0, textAlign: "center" }}>{error}</p>}
       </div>
 
       {/* Bottom card */}
       <div style={{ position: "relative", padding: "28px 28px 40px" }}>
-        <button onClick={handleIngresar} style={{
+        <button onClick={handleIngresar} disabled={cargando} style={{
           width: "100%", height: 58, borderRadius: 999, border: "none",
           background: T.cta, color: T.ctaInk,
-          fontSize: 17, fontWeight: 800, letterSpacing: "0.4px", cursor: "pointer",
+          fontSize: 17, fontWeight: 800, letterSpacing: "0.4px", cursor: cargando ? "default" : "pointer",
           boxShadow: "0 12px 28px " + T.ctaShadow,
-        }}>INGRESAR</button>
+          opacity: cargando ? 0.7 : 1,
+        }}>{cargando ? "Verificando..." : "INGRESAR"}</button>
       </div>
     </div>
   )
