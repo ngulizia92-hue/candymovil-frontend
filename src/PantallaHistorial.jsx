@@ -7,6 +7,11 @@ const IcTrash = () => (
     <path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/>
   </svg>
 )
+const IcLock = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+  </svg>
+)
 const IcCal = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>
@@ -122,10 +127,16 @@ export default function PantallaHistorial({ sesion }) {
               fontWeight: 800, fontSize: 14, padding: "6px 12px", borderRadius: 999,
               fontFamily: T.brand, minWidth: 44, textAlign: "center",
             }}>×{e.cantidad}</div>
-            <button onClick={() => handleEliminar(e.id)} style={{
-              background: "transparent", border: "none", cursor: "pointer",
-              color: T.muted, padding: 4, display: "inline-flex",
-            }}><IcTrash /></button>
+            {e.bloqueado ? (
+              <div title="Ajustado por admin" style={{
+                padding: 4, display: "inline-flex", color: "#f59e0b", opacity: 0.8,
+              }}><IcLock /></div>
+            ) : (
+              <button onClick={() => handleEliminar(e.id)} style={{
+                background: "transparent", border: "none", cursor: "pointer",
+                color: T.muted, padding: 4, display: "inline-flex",
+              }}><IcTrash /></button>
+            )}
           </div>
         ))}
       </div>
