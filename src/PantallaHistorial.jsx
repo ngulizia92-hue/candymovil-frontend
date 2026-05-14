@@ -32,8 +32,11 @@ function HeaderBlock({ children }) {
   )
 }
 
+const CACHE_KEY = v => `cm_historial_${v}`
+
 export default function PantallaHistorial({ sesion, pendingCount, refreshCount }) {
-  const [entradas, setEntradas] = useState([])
+  const cached = JSON.parse(localStorage.getItem(CACHE_KEY(sesion.vendedor)) || "[]")
+  const [entradas, setEntradas] = useState(cached)
   const [pendientes, setPendientes] = useState([])
   const [cargando, setCargando] = useState(true)
 
@@ -45,7 +48,10 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount }
 
     Promise.all([cargarServidor, getPendingLogs().catch(() => [])
     ]).then(([servidor, cola]) => {
-      if (servidor !== null) setEntradas(servidor) // solo actualiza si hay red
+      if (servidor !== null) {
+        setEntradas(servidor)
+        localStorage.setItem(CACHE_KEY(sesion.vendedor), JSON.stringify(servidor))
+      }
       setPendientes(cola)
     }).finally(() => setCargando(false))
   }, [sesion.vendedor, pendingCount])
