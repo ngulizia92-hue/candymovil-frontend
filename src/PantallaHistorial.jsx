@@ -34,15 +34,11 @@ function HeaderBlock({ children }) {
 
 const CACHE_KEY = v => `cm_historial_${v}`
 
-export default function PantallaHistorial({ sesion, pendingCount, refreshCount }) {
-  const cached = JSON.parse(localStorage.getItem(CACHE_KEY(sesion.vendedor)) || "[]")
-  const [entradas, setEntradas] = useState(cached)
+export default function PantallaHistorial({ sesion, pendingCount, refreshCount, entradas, setEntradas }) {
   const [pendientes, setPendientes] = useState([])
-  // Solo mostrar spinner si no hay nada cacheado todavía
-  const [cargando, setCargando] = useState(cached.length === 0)
+  const [cargando, setCargando] = useState(entradas.length === 0)
 
   useEffect(() => {
-    // No ocultar lo que ya tenemos — solo poner spinner si está vacío
     if (entradas.length === 0) setCargando(true)
 
     const cargarServidor = navigator.onLine
@@ -51,7 +47,6 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount }
 
     Promise.all([cargarServidor, getPendingLogs().catch(() => [])
     ]).then(([servidor, cola]) => {
-      // Solo pisamos entradas si el servidor devuelve datos reales
       if (servidor !== null && (servidor.length > 0 || cola.length === 0)) {
         setEntradas(servidor)
         localStorage.setItem(CACHE_KEY(sesion.vendedor), JSON.stringify(servidor))
@@ -63,7 +58,9 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount }
   async function handleEliminar(id) {
     try {
       await deleteStockLog(id, sesion.vendedor)
-      setEntradas(prev => prev.filter(e => e.id !== id))
+      const nuevas = entradas.filter(e => e.id !== id)
+      setEntradas(nuevas)
+      localStorage.setItem(CACHE_KEY(sesion.vendedor), JSON.stringify(nuevas))
     } catch {}
   }
 

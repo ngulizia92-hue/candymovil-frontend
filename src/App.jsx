@@ -101,6 +101,10 @@ export default function App() {
 
   const { pendingCount, syncing, isOnline, refreshCount } = useSync()
 
+  const [historialEntradas, setHistorialEntradas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`cm_historial_${sesion?.vendedor}`) || "[]") } catch { return [] }
+  })
+
   const conteoRef = useRef({ total: 0 })
   const [conteoTotal, setConteoTotal] = useState(0)
   const conteo = {
@@ -151,7 +155,7 @@ export default function App() {
         />
       )}
       {pantalla === "historial" && (
-        <PantallaHistorial sesion={sesion} pendingCount={pendingCount} refreshCount={refreshCount} />
+        <PantallaHistorial sesion={sesion} pendingCount={pendingCount} refreshCount={refreshCount} entradas={historialEntradas} setEntradas={setHistorialEntradas} />
       )}
       {pantalla === "location" && !onboarding && (
         <PantallaUbicacion
