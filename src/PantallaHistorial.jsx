@@ -32,7 +32,7 @@ function HeaderBlock({ children }) {
   )
 }
 
-export default function PantallaHistorial({ sesion }) {
+export default function PantallaHistorial({ sesion, pendingCount }) {
   const [entradas, setEntradas] = useState([])
   const [pendientes, setPendientes] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -44,9 +44,10 @@ export default function PantallaHistorial({ sesion }) {
       getPendingLogs().catch(() => []),
     ]).then(([servidor, cola]) => {
       setEntradas(servidor)
-      setPendientes(cola.filter(l => l.operario === sesion.vendedor))
+      // Sin filtro de operario: cada celu es de un solo operario
+      setPendientes(cola)
     }).finally(() => setCargando(false))
-  }, [sesion.vendedor])
+  }, [sesion.vendedor, pendingCount])
 
   async function handleEliminar(id) {
     try {
