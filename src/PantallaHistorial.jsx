@@ -38,18 +38,20 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount }
   const cached = JSON.parse(localStorage.getItem(CACHE_KEY(sesion.vendedor)) || "[]")
   const [entradas, setEntradas] = useState(cached)
   const [pendientes, setPendientes] = useState([])
-  const [cargando, setCargando] = useState(true)
+  // Solo mostrar spinner si no hay nada cacheado todavía
+  const [cargando, setCargando] = useState(cached.length === 0)
 
   useEffect(() => {
-    setCargando(true)
+    // No ocultar lo que ya tenemos — solo poner spinner si está vacío
+    if (entradas.length === 0) setCargando(true)
+
     const cargarServidor = navigator.onLine
       ? getStockLogHoy(sesion.vendedor).catch(() => null)
       : Promise.resolve(null)
 
     Promise.all([cargarServidor, getPendingLogs().catch(() => [])
     ]).then(([servidor, cola]) => {
-      // Si el servidor devuelve [] pero hay items en cola, no pisamos el historial
-      // (los items están sin sincronizar todavía)
+      // Solo pisamos entradas si el servidor devuelve datos reales
       if (servidor !== null && (servidor.length > 0 || cola.length === 0)) {
         setEntradas(servidor)
         localStorage.setItem(CACHE_KEY(sesion.vendedor), JSON.stringify(servidor))
