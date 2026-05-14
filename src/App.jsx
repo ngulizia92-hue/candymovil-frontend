@@ -54,8 +54,8 @@ function BottomNav({ current, onChange, pendingCount }) {
               position: "relative",
             }}>
               <Icon />
-              {/* Badge de pendientes en el ícono Relevar */}
-              {id === "relev" && pendingCount > 0 && (
+              {/* Badge de pendientes en el ícono Historial */}
+              {id === "historial" && pendingCount > 0 && (
                 <span style={{
                   position: "absolute", top: -2, right: -2,
                   background: "#ef4444", color: "white",

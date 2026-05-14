@@ -39,12 +39,13 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount }
 
   useEffect(() => {
     setCargando(true)
-    Promise.all([
-      getStockLogHoy(sesion.vendedor).catch(() => []),
-      getPendingLogs().catch(() => []),
+    const cargarServidor = navigator.onLine
+      ? getStockLogHoy(sesion.vendedor).catch(() => null)
+      : Promise.resolve(null)
+
+    Promise.all([cargarServidor, getPendingLogs().catch(() => [])
     ]).then(([servidor, cola]) => {
-      setEntradas(servidor)
-      // Sin filtro de operario: cada celu es de un solo operario
+      if (servidor !== null) setEntradas(servidor) // solo actualiza si hay red
       setPendientes(cola)
     }).finally(() => setCargando(false))
   }, [sesion.vendedor, pendingCount])
