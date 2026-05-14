@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { T } from "./theme"
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
@@ -8,12 +8,45 @@ const IcUser = () => (
     <circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/>
   </svg>
 )
+const IcDownload = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3v13M7 11l5 5 5-5"/><path d="M5 21h14"/>
+  </svg>
+)
 
 export default function PantallaIngreso({ onIngresar }) {
   const [vendedor, setVendedor] = useState("")
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [yaInstalada, setYaInstalada] = useState(false)
+
+  useEffect(() => {
+    // Captura el evento antes de que el browser muestre el popup nativo
+    const handler = (e) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+    }
+    window.addEventListener("beforeinstallprompt", handler)
+
+    // Si ya está instalada como PWA, no mostrar el botón
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setYaInstalada(true)
+    }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler)
+  }, [])
+
+  async function handleInstalar() {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === "accepted") {
+      setInstallPrompt(null)
+      setYaInstalada(true)
+    }
+  }
 
   async function handleIngresar() {
     if (!vendedor.trim() || !pin.trim()) { setError("Ingresá tu número y PIN"); return }
@@ -37,7 +70,6 @@ export default function PantallaIngreso({ onIngresar }) {
 
   return (
     <div style={{ minHeight: "100svh", display: "flex", flexDirection: "column", background: T.heroBg, position: "relative", overflow: "hidden" }}>
-      {/* Decorative circles */}
       <div style={{ position: "absolute", top: -80, right: -60, width: 220, height: 220, borderRadius: "50%", background: T.heroDecor1 }} />
       <div style={{ position: "absolute", bottom: 160, left: -90, width: 180, height: 180, borderRadius: "50%", background: T.heroDecor2 }} />
       <div style={{ position: "absolute", top: 300, right: 30, width: 80, height: 80, borderRadius: "50%", background: T.heroDecor3 }} />
@@ -65,9 +97,21 @@ export default function PantallaIngreso({ onIngresar }) {
         </div>
 
         {error && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: 600, margin: 0, textAlign: "center" }}>{error}</p>}
+
+        {/* Botón instalar — solo aparece si el browser lo permite y no está instalada */}
+        {installPrompt && !yaInstalada && (
+          <button onClick={handleInstalar} style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+            borderRadius: 999, padding: "10px 22px", cursor: "pointer",
+            color: "white", fontSize: 14, fontWeight: 700,
+          }}>
+            <IcDownload /> Instalar app en el celu
+          </button>
+        )}
       </div>
 
-      {/* Bottom card */}
+      {/* Bottom */}
       <div style={{ position: "relative", padding: "28px 28px 40px" }}>
         <button onClick={handleIngresar} disabled={cargando} style={{
           width: "100%", height: 58, borderRadius: 999, border: "none",
