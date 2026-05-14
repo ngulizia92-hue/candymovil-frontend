@@ -48,7 +48,9 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount }
 
     Promise.all([cargarServidor, getPendingLogs().catch(() => [])
     ]).then(([servidor, cola]) => {
-      if (servidor !== null) {
+      // Si el servidor devuelve [] pero hay items en cola, no pisamos el historial
+      // (los items están sin sincronizar todavía)
+      if (servidor !== null && (servidor.length > 0 || cola.length === 0)) {
         setEntradas(servidor)
         localStorage.setItem(CACHE_KEY(sesion.vendedor), JSON.stringify(servidor))
       }
