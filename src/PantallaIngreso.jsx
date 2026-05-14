@@ -22,19 +22,14 @@ export default function PantallaIngreso({ onIngresar }) {
   const [installPrompt, setInstallPrompt] = useState(null)
   const [yaInstalada, setYaInstalada] = useState(false)
 
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const esSafari = /safari/i.test(navigator.userAgent) && !/chrome|chromium|crios/i.test(navigator.userAgent)
+  const [mostrarGuiaIOS, setMostrarGuiaIOS] = useState(false)
+
   useEffect(() => {
-    // Captura el evento antes de que el browser muestre el popup nativo
-    const handler = (e) => {
-      e.preventDefault()
-      setInstallPrompt(e)
-    }
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
     window.addEventListener("beforeinstallprompt", handler)
-
-    // Si ya está instalada como PWA, no mostrar el botón
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setYaInstalada(true)
-    }
-
+    if (window.matchMedia("(display-mode: standalone)").matches) setYaInstalada(true)
     return () => window.removeEventListener("beforeinstallprompt", handler)
   }, [])
 
@@ -48,8 +43,35 @@ export default function PantallaIngreso({ onIngresar }) {
     }
   }
 
+  function loginConCache(numeroIngresado, pinIngresado) {
+    const cached = JSON.parse(localStorage.getItem("cm_cache") || "null")
+    if (cached && cached.numero === numeroIngresado && cached.pin === pinIngresado) {
+      onIngresar({ vendedor: cached.numero, nombre: cached.nombre })
+      return true
+    }
+    return false
+  }
+
+  // DEBUG: info visible en pantalla
+  const cacheDebug = (() => {
+    try {
+      const c = JSON.parse(localStorage.getItem("cm_cache") || "null")
+      if (!c) return "cache: vacío"
+      return `cache: nro="${c.numero}" (${typeof c.numero}) nombre="${c.nombre}"`
+    } catch { return "cache: error al leer" }
+  })()
+
   async function handleIngresar() {
     if (!vendedor.trim() || !pin.trim()) { setError("Ingresá tu número y PIN"); return }
+
+    // Sin red → intentar con credenciales cacheadas del último login
+    if (!navigator.onLine) {
+      if (!loginConCache(vendedor.trim(), pin.trim())) {
+        setError(`Sin conexión — ${cacheDebug}`)
+      }
+      return
+    }
+
     setCargando(true); setError("")
     try {
       const r = await fetch(`${API}/vendedores/login`, {
@@ -60,9 +82,15 @@ export default function PantallaIngreso({ onIngresar }) {
       if (r.status === 401) { setError("Datos Inválidos"); return }
       if (!r.ok) { setError("Error al conectar. Intentá de nuevo."); return }
       const data = await r.json()
+      // Guardar para permitir login offline la próxima vez
+      localStorage.setItem("cm_cache", JSON.stringify({ numero: String(data.numero), pin: pin.trim(), nombre: data.nombre }))
       onIngresar({ vendedor: data.numero, nombre: data.nombre })
-    } catch {
-      setError("Sin conexión con el servidor")
+    } catch (err) {
+      // Falla de red aunque navigator.onLine dijera que había conexión
+      const entro = loginConCache(vendedor.trim(), pin.trim())
+      if (!entro) {
+        setError(`Error: ${err?.message || err} | online:${navigator.onLine} | ${cacheDebug}`)
+      }
     } finally {
       setCargando(false)
     }
