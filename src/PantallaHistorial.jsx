@@ -18,6 +18,11 @@ const IcCal = () => (
     <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>
   </svg>
 )
+const IcSearch = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
+  </svg>
+)
 
 function HeaderBlock({ children }) {
   return (
@@ -37,6 +42,7 @@ const CACHE_KEY = v => `cm_historial_${v}`
 export default function PantallaHistorial({ sesion, pendingCount, refreshCount, entradas, setEntradas }) {
   const [pendientes, setPendientes] = useState([])
   const [cargando, setCargando] = useState(entradas.length === 0)
+  const [busqueda, setBusqueda] = useState("")
 
   useEffect(() => {
     if (entradas.length === 0) setCargando(true)
@@ -72,6 +78,10 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
     } catch {}
   }
 
+  const q = busqueda.trim().toLowerCase()
+  const entradasFiltradas = q ? entradas.filter(e => e.sku?.toLowerCase().includes(q) || e.descripcion?.toLowerCase().includes(q)) : entradas
+  const pendientesFiltrados = q ? pendientes.filter(p => p.sku?.toLowerCase().includes(q)) : pendientes
+
   const total = entradas.reduce((a, b) => a + b.cantidad, 0) + pendientes.reduce((a, b) => a + b.cantidad, 0)
 
   return (
@@ -84,25 +94,41 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
           </div>
           <div style={{ color: T.headerInk, display: "inline-flex", opacity: 0.85 }}><IcCal /></div>
         </div>
-        <div style={{
-          background: "rgba(255,255,255,0.18)", borderRadius: 999, padding: "3px 3px",
-          display: "flex", marginTop: 16,
-        }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <div style={{
-            flex: 1, height: 34, borderRadius: 999, background: "#fff",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: T.primary, fontWeight: 800, fontSize: 13,
+            background: "rgba(255,255,255,0.18)", borderRadius: 999, padding: "3px 3px",
+            display: "flex", flex: "0 0 auto",
           }}>
-            Hoy · <span style={{ opacity: 0.65, marginLeft: 4 }}>{entradas.length + pendientes.length}</span>
+            <div style={{
+              height: 34, borderRadius: 999, background: "#fff",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: T.primary, fontWeight: 800, fontSize: 13, padding: "0 16px",
+            }}>
+              Hoy · <span style={{ opacity: 0.65, marginLeft: 4 }}>{entradas.length + pendientes.length}</span>
+            </div>
+          </div>
+          <div style={{
+            flex: 1, background: "rgba(255,255,255,0.18)", borderRadius: 999,
+            display: "flex", alignItems: "center", padding: "0 14px", gap: 8,
+          }}>
+            <span style={{ color: "rgba(255,255,255,0.7)", display: "inline-flex" }}><IcSearch /></span>
+            <input
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              placeholder="Buscar SKU o nombre..."
+              style={{
+                flex: 1, background: "transparent", border: "none", outline: "none",
+                color: "#fff", fontSize: 13, fontWeight: 600,
+              }}
+            />
+            {busqueda && (
+              <button onClick={() => setBusqueda("")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", padding: 0, fontSize: 16, lineHeight: 1 }}>×</button>
+            )}
           </div>
         </div>
       </HeaderBlock>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {/* DEBUG TEMPORAL */}
-        <div style={{ fontSize: 10, color: "#999", background: "#f5f5f5", padding: "4px 8px", borderRadius: 6 }}>
-          v6 | entradas:{entradas.length} | cache:{localStorage.getItem(CACHE_KEY(sesion.vendedor))?.length || 0} | sesion:{localStorage.getItem("cm_sesion") ? "✓" : "✗"}
-        </div>
         {/* Total banner */}
         <div style={{
           background: T.accent, color: T.accentInk, borderRadius: 20,
@@ -120,7 +146,7 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
         </div>
 
         {/* Items pendientes de sincronizar */}
-        {pendientes.map((p, i) => (
+        {pendientesFiltrados.map((p, i) => (
           <div key={`p-${i}`} style={{
             background: "#fffbeb", border: "1.5px solid #fcd34d", borderRadius: 18,
             padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
@@ -161,7 +187,7 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
             <div style={{ fontSize: 14, fontWeight: 700, color: T.ink }}>Sin cargas todavía</div>
             <div style={{ fontSize: 12, marginTop: 4 }}>Empezá un relevamiento desde la pantalla principal.</div>
           </div>
-        ) : entradas.map(e => (
+        ) : entradasFiltradas.map(e => (
           <div key={e.id} style={{
             background: T.card, border: T.cardBorder, borderRadius: 18,
             padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
