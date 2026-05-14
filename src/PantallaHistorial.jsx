@@ -99,6 +99,10 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
       </HeaderBlock>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* DEBUG TEMPORAL */}
+        <div style={{ fontSize: 10, color: "#999", background: "#f5f5f5", padding: "4px 8px", borderRadius: 6 }}>
+          v6 | entradas:{entradas.length} | cache:{localStorage.getItem(CACHE_KEY(sesion.vendedor))?.length || 0} | sesion:{localStorage.getItem("cm_sesion") ? "✓" : "✗"}
+        </div>
         {/* Total banner */}
         <div style={{
           background: T.accent, color: T.accentInk, borderRadius: 20,
