@@ -21,15 +21,19 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
   const [buscando, setBuscando] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [noEncontrado, setNoEncontrado] = useState(false)
+  const [bloqueado, setBloqueado] = useState(false)
   const [error, setError] = useState("")
 
   async function handleBuscar() {
     if (!skuValue.trim()) return
-    setBuscando(true); setNoEncontrado(false); setError("")
+    setBuscando(true); setNoEncontrado(false); setBloqueado(false); setError("")
     try {
       const art = await buscarArticulo(skuValue.trim())
-      if (art) { setArticulo(art); setMode("qty") }
-      else { setNoEncontrado(true) }
+      if (art) {
+        setArticulo(art)
+        if (art.bloqueado) { setBloqueado(true) }
+        else { setMode("qty") }
+      } else { setNoEncontrado(true) }
     } catch { setError("Error al buscar") }
     finally { setBuscando(false) }
   }
@@ -45,10 +49,14 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
     finally { setGuardando(false) }
   }
 
+  function resetSku() {
+    setSkuValue(""); setNoEncontrado(false); setBloqueado(false); setArticulo(null)
+  }
+
   function onKey(k) {
     if (mode === "sku") {
-      if (k === "del") { setSkuValue(v => v.slice(0, -1)); setNoEncontrado(false) }
-      else if (k === "clr") { setSkuValue(""); setNoEncontrado(false) }
+      if (k === "del") { setSkuValue(v => v.slice(0, -1)); setNoEncontrado(false); setBloqueado(false) }
+      else if (k === "clr") resetSku()
       else if (k === "ok") handleBuscar()
       else if (skuValue.length < 12) setSkuValue(v => v + k)
     } else {
@@ -117,22 +125,30 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
       <div style={{ padding: "12px 18px 0", flexShrink: 0 }}>
         <div style={{
           background: T.card,
-          border: noEncontrado ? "2px solid #ef4444" : mode === "qty" ? T.cardBorderStrong : T.cardBorder,
+          border: noEncontrado ? "2px solid #ef4444" : bloqueado ? "2px solid #f59e0b" : mode === "qty" ? T.cardBorderStrong : T.cardBorder,
           borderRadius: 20, padding: "12px 16px",
           minHeight: 100,
           display: "flex", flexDirection: "column", justifyContent: "center",
         }}>
           {mode === "sku" ? (
             <>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "2px", color: noEncontrado ? "#ef4444" : T.primary, marginBottom: 6 }}>
-                {noEncontrado ? "❌  SKU NO ENCONTRADO — INTENTÁ DE NUEVO" : "SKU"}
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "2px", marginBottom: 6,
+                color: noEncontrado ? "#ef4444" : bloqueado ? "#f59e0b" : T.primary }}>
+                {noEncontrado ? "❌  SKU NO ENCONTRADO — INTENTÁ DE NUEVO"
+                  : bloqueado ? "🔒  SKU BLOQUEADO — CONSULTÁ CON EL ADMIN"
+                  : "SKU"}
               </div>
               <div style={{
                 fontSize: 38, fontWeight: 800, fontFamily: T.brand, letterSpacing: "3px",
-                color: skuValue ? T.ink : T.muted, lineHeight: 1,
+                color: bloqueado ? "#f59e0b" : skuValue ? T.ink : T.muted, lineHeight: 1,
               }}>
                 {skuValue || <span style={{ fontSize: 24, letterSpacing: 1, fontWeight: 600 }}>· · · ·</span>}
               </div>
+              {bloqueado && articulo && (
+                <div style={{ fontSize: 11, color: "#92400e", fontWeight: 600, marginTop: 4 }}>
+                  {articulo.descripcion}
+                </div>
+              )}
             </>
           ) : (
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
