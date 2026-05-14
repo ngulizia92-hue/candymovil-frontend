@@ -126,7 +126,7 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
       if (k === "del") setQtyValue(v => v.slice(0, -1))
       else if (k === "clr") { setQtyValue(""); setSkuValue(""); setArticulo(null); setMode("sku") }
       else if (k === "ok") handleConfirmar()
-      else if (qtyValue.length < 4) setQtyValue(v => (v + k).replace(/^0+(?=\d)/, ""))
+      else if (qtyValue.length < 5) setQtyValue(v => (v + k).replace(/^0+(?=\d)/, ""))
     }
   }
 
