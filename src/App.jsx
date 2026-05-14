@@ -95,15 +95,35 @@ function OfflineBanner({ isOnline, syncing, pendingCount }) {
 
 export default function App() {
   const isAdmin = window.location.pathname === "/admin"
-  const [pantalla, setPantalla] = useState("login")
-  const [sesion, setSesion] = useState(null)
-  const [onboarding, setOnboarding] = useState(true)
+
+  // Restaurar sesión desde localStorage (sobrevive recargas de página por iOS/SW)
+  const [sesion, setSesion] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("cm_sesion") || "null") } catch { return null }
+  })
+  const [pantalla, setPantalla] = useState(() => {
+    return sesion ? (localStorage.getItem("cm_pantalla") || "relev") : "login"
+  })
+  const [onboarding, setOnboarding] = useState(!sesion)
 
   const { pendingCount, syncing, isOnline, refreshCount } = useSync()
 
   const [historialEntradas, setHistorialEntradas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(`cm_historial_${sesion?.vendedor}`) || "[]") } catch { return [] }
+    try {
+      const v = JSON.parse(localStorage.getItem("cm_sesion") || "null")?.vendedor
+      return v ? JSON.parse(localStorage.getItem(`cm_historial_${v}`) || "[]") : []
+    } catch { return [] }
   })
+
+  function guardarSesion(datos) {
+    setSesion(datos)
+    if (datos) localStorage.setItem("cm_sesion", JSON.stringify(datos))
+    else localStorage.removeItem("cm_sesion")
+  }
+
+  function guardarPantalla(p) {
+    setPantalla(p)
+    localStorage.setItem("cm_pantalla", p)
+  }
 
   const conteoRef = useRef({ total: 0 })
   const [conteoTotal, setConteoTotal] = useState(0)
@@ -121,8 +141,8 @@ export default function App() {
   if (pantalla === "login") {
     return (
       <PantallaIngreso onIngresar={(datos) => {
-        setSesion(datos)
-        setPantalla("location")
+        guardarSesion(datos)
+        guardarPantalla("location")
         setOnboarding(true)
       }} />
     )
@@ -134,11 +154,11 @@ export default function App() {
         sesion={sesion}
         onboarding={true}
         onContinuar={(datos) => {
-          setSesion(datos)
+          guardarSesion(datos)
           setOnboarding(false)
-          setPantalla("relev")
+          guardarPantalla("relev")
         }}
-        onBack={() => setPantalla("login")}
+        onBack={() => { guardarSesion(null); guardarPantalla("login") }}
       />
     )
   }
@@ -151,7 +171,7 @@ export default function App() {
         <PantallaRelevamiento
           sesion={sesion}
           conteo={conteo}
-          onChangeLocation={() => { setOnboarding(false); setPantalla("location") }}
+          onChangeLocation={() => { setOnboarding(false); guardarPantalla("location") }}
         />
       )}
       {pantalla === "historial" && (
@@ -161,8 +181,8 @@ export default function App() {
         <PantallaUbicacion
           sesion={sesion}
           onboarding={false}
-          onContinuar={(datos) => { setSesion(datos); setPantalla("relev") }}
-          onBack={() => setPantalla("relev")}
+          onContinuar={(datos) => { guardarSesion(datos); guardarPantalla("relev") }}
+          onBack={() => guardarPantalla("relev")}
         />
       )}
       {(pantalla === "relev" || pantalla === "historial") && (
@@ -170,8 +190,8 @@ export default function App() {
           current={pantalla}
           pendingCount={pendingCount}
           onChange={(id) => {
-            if (id === "location") { setOnboarding(false); setPantalla("location") }
-            else setPantalla(id)
+            if (id === "location") { setOnboarding(false); guardarPantalla("location") }
+            else guardarPantalla(id)
           }}
         />
       )}
