@@ -3,35 +3,10 @@ name: Deploy
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'dist/**'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Commit dist
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dist/
-          git diff --cached --quiet || git commit -m "chore: build [skip ci]"
-          git push
-
       - name: Trigger EasyPanel deploy
         run: curl -s "http://212.85.12.38:3000/api/deploy/aa3ad7f4508508f59a597450af6a7f58cee30068efd85662"
