@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { T } from "./theme"
 import { getStockLogHoy, deleteStockLog } from "./api"
+import { getPendingLogs } from "./offlineQueue"
 
 const IcTrash = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -33,14 +34,18 @@ function HeaderBlock({ children }) {
 
 export default function PantallaHistorial({ sesion }) {
   const [entradas, setEntradas] = useState([])
+  const [pendientes, setPendientes] = useState([])
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
     setCargando(true)
-    getStockLogHoy(sesion.vendedor)
-      .then(setEntradas)
-      .catch(() => {})
-      .finally(() => setCargando(false))
+    Promise.all([
+      getStockLogHoy(sesion.vendedor).catch(() => []),
+      getPendingLogs().catch(() => []),
+    ]).then(([servidor, cola]) => {
+      setEntradas(servidor)
+      setPendientes(cola.filter(l => l.operario === sesion.vendedor))
+    }).finally(() => setCargando(false))
   }, [sesion.vendedor])
 
   async function handleEliminar(id) {
@@ -50,7 +55,7 @@ export default function PantallaHistorial({ sesion }) {
     } catch {}
   }
 
-  const total = entradas.reduce((a, b) => a + b.cantidad, 0)
+  const total = entradas.reduce((a, b) => a + b.cantidad, 0) + pendientes.reduce((a, b) => a + b.cantidad, 0)
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -71,7 +76,7 @@ export default function PantallaHistorial({ sesion }) {
             display: "flex", alignItems: "center", justifyContent: "center",
             color: T.primary, fontWeight: 800, fontSize: 13,
           }}>
-            Hoy · <span style={{ opacity: 0.65, marginLeft: 4 }}>{entradas.length}</span>
+            Hoy · <span style={{ opacity: 0.65, marginLeft: 4 }}>{entradas.length + pendientes.length}</span>
           </div>
         </div>
       </HeaderBlock>
@@ -93,9 +98,36 @@ export default function PantallaHistorial({ sesion }) {
           </div>
         </div>
 
+        {/* Items pendientes de sincronizar */}
+        {pendientes.map((p, i) => (
+          <div key={`p-${i}`} style={{
+            background: "#fffbeb", border: "1.5px solid #fcd34d", borderRadius: 18,
+            padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 14, background: "#fef3c7", color: "#d97706",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 800, fontSize: 12, fontFamily: T.brand, flexShrink: 0,
+            }}>{p.sku}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#92400e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {p.sku}
+              </div>
+              <div style={{ fontSize: 11, color: "#b45309", marginTop: 2 }}>
+                ⏳ Pendiente de sincronizar
+              </div>
+            </div>
+            <div style={{
+              background: "#fcd34d", color: "#92400e",
+              fontWeight: 800, fontSize: 14, padding: "6px 12px", borderRadius: 999,
+              fontFamily: T.brand, minWidth: 44, textAlign: "center",
+            }}>×{p.cantidad}</div>
+          </div>
+        ))}
+
         {cargando ? (
           <div style={{ textAlign: "center", padding: 40, color: T.muted, fontSize: 14 }}>Cargando...</div>
-        ) : entradas.length === 0 ? (
+        ) : entradas.length === 0 && pendientes.length === 0 ? (
           <div style={{
             background: T.card, border: T.cardBorder, borderRadius: 20,
             padding: "32px 22px", textAlign: "center", color: T.muted,
