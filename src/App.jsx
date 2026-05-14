@@ -151,7 +151,7 @@ export default function App() {
         />
       )}
       {pantalla === "historial" && (
-        <PantallaHistorial sesion={sesion} pendingCount={pendingCount} />
+        <PantallaHistorial sesion={sesion} pendingCount={pendingCount} refreshCount={refreshCount} />
       )}
       {pantalla === "location" && !onboarding && (
         <PantallaUbicacion

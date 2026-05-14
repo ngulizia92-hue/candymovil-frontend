@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { T } from "./theme"
 import { getStockLogHoy, deleteStockLog } from "./api"
-import { getPendingLogs } from "./offlineQueue"
+import { getPendingLogs, deleteLog } from "./offlineQueue"
 
 const IcTrash = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -32,7 +32,7 @@ function HeaderBlock({ children }) {
   )
 }
 
-export default function PantallaHistorial({ sesion, pendingCount }) {
+export default function PantallaHistorial({ sesion, pendingCount, refreshCount }) {
   const [entradas, setEntradas] = useState([])
   const [pendientes, setPendientes] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -53,6 +53,14 @@ export default function PantallaHistorial({ sesion, pendingCount }) {
     try {
       await deleteStockLog(id, sesion.vendedor)
       setEntradas(prev => prev.filter(e => e.id !== id))
+    } catch {}
+  }
+
+  async function handleEliminarPendiente(id) {
+    try {
+      await deleteLog(id)
+      setPendientes(prev => prev.filter(p => p.id !== id))
+      refreshCount?.()
     } catch {}
   }
 
@@ -123,6 +131,10 @@ export default function PantallaHistorial({ sesion, pendingCount }) {
               fontWeight: 800, fontSize: 14, padding: "6px 12px", borderRadius: 999,
               fontFamily: T.brand, minWidth: 44, textAlign: "center",
             }}>×{p.cantidad}</div>
+            <button onClick={() => handleEliminarPendiente(p.id)} style={{
+              background: "transparent", border: "none", cursor: "pointer",
+              color: "#b45309", padding: 4, display: "inline-flex",
+            }}><IcTrash /></button>
           </div>
         ))}
 
