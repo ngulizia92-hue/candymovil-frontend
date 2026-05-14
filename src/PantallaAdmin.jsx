@@ -323,6 +323,7 @@ function LogModal({ linea, ubicacion, vendedoresMap, onClose, onRefresh }) {
   const [nuevaCantidad, setNuevaCantidad] = useState("")
   const [guardando, setGuardando] = useState(false)
   const [liberando, setLiberando] = useState(false)
+  const [limpiando, setLimpiando] = useState(false)
   const [errorAjuste, setErrorAjuste] = useState("")
 
   const fmtFecha = iso => new Date(iso).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })
@@ -338,6 +339,17 @@ function LogModal({ linea, ubicacion, vendedoresMap, onClose, onRefresh }) {
       onRefresh()
     } finally {
       setLiberando(false)
+    }
+  }
+
+  async function handleLimpiar() {
+    if (!window.confirm(`¿Limpiar todos los registros de ${linea.sku}? Quedará en 0 unidades. Esta acción no se puede deshacer.`)) return
+    setLimpiando(true)
+    try {
+      await fetch(`${API}/admin/limpiar/${linea.sku}/${ubicacion.ubicacion_id}`, { method: "POST" })
+      onRefresh()
+    } finally {
+      setLimpiando(false)
     }
   }
 
@@ -409,6 +421,12 @@ function LogModal({ linea, ubicacion, vendedoresMap, onClose, onRefresh }) {
                     opacity: liberando ? 0.6 : 1,
                   }}>🔓 {liberando ? "Liberando..." : "Liberar SKU"}</button>
                 )}
+                <button onClick={handleLimpiar} disabled={limpiando} style={{
+                  display: "flex", alignItems: "center", gap: 7,
+                  padding: "8px 16px", borderRadius: 8, border: "1px solid #fecaca",
+                  background: "#fff5f5", color: "#dc2626", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  opacity: limpiando ? 0.6 : 1,
+                }}>🗑 {limpiando ? "Limpiando..." : "Limpiar SKU"}</button>
                 <button
                   onClick={() => { setAjustando(true); setNuevaCantidad(String(linea.total)) }}
                   style={{
