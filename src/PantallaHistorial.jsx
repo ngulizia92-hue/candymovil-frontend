@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { T } from "./theme"
-import { getStockLogHoy, deleteStockLog } from "./api"
-import { getPendingLogs, deleteLog } from "./offlineQueue"
+import { getStockLogHoy, deleteStockLog, getObservaciones } from "./api"
+import { getPendingLogs, deleteLog, getPendingObs } from "./offlineQueue"
 
 const IcTrash = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -54,6 +54,8 @@ const FILTROS = [
 
 export default function PantallaHistorial({ sesion, pendingCount, refreshCount, entradas, setEntradas }) {
   const [pendientes, setPendientes] = useState([])
+  const [observaciones, setObservaciones] = useState([])
+  const [obsOffline, setObsOffline] = useState([])
   const [cargando, setCargando] = useState(entradas.length === 0)
   const [busqueda, setBusqueda] = useState("")
   const [filtro, setFiltro] = useState("hoy")
@@ -73,13 +75,20 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
       ? getStockLogHoy(sesion.vendedor, f.desde(), f.hasta()).catch(() => null)
       : Promise.resolve(null)
 
-    Promise.all([cargarServidor, getPendingLogs().catch(() => [])
-    ]).then(([servidor, cola]) => {
+    const cargarObs = navigator.onLine
+      ? getObservaciones(sesion.vendedor).catch(() => [])
+      : Promise.resolve([])
+    const cargarObsOffline = getPendingObs().catch(() => [])
+
+    Promise.all([cargarServidor, getPendingLogs().catch(() => []), cargarObs, cargarObsOffline
+    ]).then(([servidor, cola, obs, obsOf]) => {
       if (servidor !== null && (servidor.length > 0 || cola.length === 0)) {
         setEntradas(servidor)
         localStorage.setItem(CACHE_KEY(sesion.vendedor), JSON.stringify(servidor))
       }
       setPendientes(cola)
+      setObservaciones(obs)
+      setObsOffline(obsOf)
     }).finally(() => setCargando(false))
   }, [sesion.vendedor, pendingCount, filtro])
 
@@ -205,6 +214,46 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
             {entradas.length} ítems
           </div>
         </div>
+
+        {/* Observaciones offline pendientes */}
+        {obsOffline.map((p, i) => (
+          <div key={`obs-offline-${i}`} style={{
+            background: "#fff7ed", border: "1.5px solid #fdba74", borderRadius: 18,
+            padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 12,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 14, background: "#fed7aa", color: "#c2410c",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 800, fontSize: 20, flexShrink: 0,
+            }}>💬</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#9a3412", marginBottom: 2 }}>{p.texto}</div>
+              {p.sku && <div style={{ fontSize: 11, color: "#c2410c", marginBottom: 2 }}>SKU: {p.sku}</div>}
+              <div style={{ fontSize: 11, color: "#ea580c" }}>⏳ Pendiente de sincronizar</div>
+            </div>
+          </div>
+        ))}
+
+        {/* Observaciones sincronizadas */}
+        {observaciones.map(obs => (
+          <div key={`obs-${obs.id}`} style={{
+            background: "#fffbeb", border: "1.5px solid #fcd34d", borderRadius: 18,
+            padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 12,
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 14, background: "#fef3c7", color: "#d97706",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 800, fontSize: 20, flexShrink: 0,
+            }}>💬</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#92400e", marginBottom: 2 }}>{obs.texto}</div>
+              {obs.sku && <div style={{ fontSize: 11, color: "#b45309", marginBottom: 2 }}>SKU: {obs.sku}</div>}
+              <div style={{ fontSize: 11, color: "#b45309", marginTop: 2 }}>
+                {obs.ubicacion_nombre || ""} · {formatHora(obs.created_at)}
+              </div>
+            </div>
+          </div>
+        ))}
 
         {/* Items pendientes de sincronizar */}
         {pendientesFiltrados.map((p, i) => (

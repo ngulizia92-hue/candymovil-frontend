@@ -1,4 +1,4 @@
-import { queueLog, guardarArticulosCache, buscarArticuloLocal, buscarArticulosLocal } from './offlineQueue'
+import { queueLog, guardarArticulosCache, buscarArticuloLocal, buscarArticulosLocal, queueObs } from './offlineQueue'
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
@@ -80,5 +80,41 @@ export async function deleteStockLog(id, operario) {
     method: "DELETE",
   })
   if (!r.ok) throw new Error("Error al eliminar")
+  return r.json()
+}
+
+export async function crearObservacion(data) {
+  if (!navigator.onLine) {
+    await queueObs(data)
+    return { offline: true, ...data }
+  }
+  try {
+    const r = await fetch(`${BASE}/observaciones/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!r.ok) throw new Error('Error al guardar')
+    return r.json()
+  } catch (err) {
+    if (err instanceof TypeError) {
+      await queueObs(data)
+      return { offline: true, ...data }
+    }
+    throw err
+  }
+}
+
+export async function getObservaciones(operario) {
+  const r = await fetch(`${BASE}/observaciones/?operario=${encodeURIComponent(operario)}`)
+  if (!r.ok) throw new Error('Error')
+  return r.json()
+}
+
+export async function resolverObservacion(id, por) {
+  const r = await fetch(`${BASE}/observaciones/${id}/resolver?por=${encodeURIComponent(por)}`, {
+    method: 'PATCH',
+  })
+  if (!r.ok) throw new Error('Error')
   return r.json()
 }

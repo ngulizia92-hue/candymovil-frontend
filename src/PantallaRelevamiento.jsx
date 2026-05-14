@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { T } from "./theme"
-import { buscarArticulo, agregarStockLog, buscarArticulosPorNombre } from "./api"
+import { buscarArticulo, agregarStockLog, buscarArticulosPorNombre, crearObservacion } from "./api"
 
 const IcPin = ({ s = 22 }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -28,6 +28,12 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
   // Cantidad
   const [qtyValue, setQtyValue] = useState("")
   const [guardando, setGuardando] = useState(false)
+
+  // OBS mode
+  const [obsTexto, setObsTexto] = useState("")
+  const [obsSkuRef, setObsSkuRef] = useState("")
+  const [obsGuardando, setObsGuardando] = useState(false)
+  const [obsExito, setObsExito] = useState(false)
 
   // Artículo seleccionado
   const [articulo, setArticulo] = useState(null)
@@ -110,6 +116,27 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
     setNombreQuery("")
     setResultados([])
     setBloqueado(false)
+    setObsTexto("")
+    setObsSkuRef("")
+    setObsExito(false)
+  }
+
+  async function handleGuardarObs() {
+    if (!obsTexto.trim()) return
+    setObsGuardando(true)
+    try {
+      await crearObservacion({
+        ubicacion_id: sesion.ubicacion_id,
+        sku: obsSkuRef.trim() || null,
+        texto: obsTexto.trim(),
+        operario: sesion.vendedor,
+      })
+      setObsTexto("")
+      setObsSkuRef("")
+      setObsExito(true)
+      setTimeout(() => setObsExito(false), 2000)
+    } catch {}
+    finally { setObsGuardando(false) }
   }
 
   const canConfirm = articulo && qtyValue && qtyValue !== "0" && !guardando
@@ -223,15 +250,15 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
         {error && <div style={{ textAlign: "center", fontSize: 12, color: "#e53935", fontWeight: 600, marginTop: 6 }}>{error}</div>}
       </div>
 
-      {/* Toggle SKU / NOMBRE — solo cuando estamos eligiendo artículo */}
+      {/* Toggle SKU / NOMBRE / OBS — solo cuando estamos eligiendo artículo */}
       {mode === "sku" && (
         <div style={{ padding: "10px 18px 0", flexShrink: 0 }}>
           <div style={{ display: "flex", background: T.keypadBg, borderRadius: 14, padding: 4, gap: 4 }}>
-            {[["sku", "# SKU"], ["nombre", "🔍 Nombre"]].map(([tipo, label]) => (
+            {[["sku", "# SKU"], ["nombre", "🔍 Nombre"], ["obs", "💬 OBS"]].map(([tipo, label]) => (
               <button key={tipo} onClick={() => cambiarTipo(tipo)} style={{
                 flex: 1, height: 36, borderRadius: 10, border: "none", cursor: "pointer",
                 fontWeight: 700, fontSize: 13, fontFamily: T.brand,
-                background: busquedaTipo === tipo ? T.primary : "transparent",
+                background: busquedaTipo === tipo ? (tipo === "obs" ? "#f59e0b" : T.primary) : "transparent",
                 color: busquedaTipo === tipo ? "#fff" : T.muted,
                 transition: "all .15s",
               }}>{label}</button>
@@ -243,8 +270,65 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
       {/* Contenido del teclado */}
       <div style={{ flex: 1, padding: "8px 18px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
 
-        {/* MODO NOMBRE: input + resultados */}
-        {mode === "sku" && busquedaTipo === "nombre" ? (
+        {/* MODO OBS: textarea + sku ref + guardar */}
+        {mode === "sku" && busquedaTipo === "obs" ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+            {obsExito && (
+              <div style={{ background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 14, padding: "10px 14px", textAlign: "center", fontSize: 14, fontWeight: 700, color: "#16a34a" }}>
+                ✓ Observación guardada
+              </div>
+            )}
+            <div style={{ background: T.keypadBg, borderRadius: 18, padding: "12px 14px", flexShrink: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", color: "#f59e0b", marginBottom: 8 }}>SKU REFERENCIA (opcional)</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="text"
+                  value={obsSkuRef}
+                  onChange={e => setObsSkuRef(e.target.value)}
+                  placeholder="Ej: 12345"
+                  style={{
+                    flex: 1, background: "white", border: "1.5px solid #fde68a", borderRadius: 10,
+                    padding: "7px 12px", fontSize: 14, fontWeight: 600, color: "#92400e",
+                    outline: "none", fontFamily: T.brand,
+                  }}
+                />
+                {obsSkuRef && (
+                  <button onClick={() => setObsSkuRef("")} style={{
+                    background: "#fde68a", border: "none", borderRadius: 8, cursor: "pointer",
+                    color: "#92400e", fontWeight: 700, fontSize: 13, padding: "6px 10px",
+                  }}>✕</button>
+                )}
+              </div>
+            </div>
+            <div style={{ flex: 1, background: T.keypadBg, borderRadius: 18, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", color: "#f59e0b" }}>OBSERVACIÓN</div>
+              <textarea
+                value={obsTexto}
+                onChange={e => setObsTexto(e.target.value)}
+                placeholder="Escribí lo que está pasando..."
+                style={{
+                  flex: 1, resize: "none", background: "white", border: "1.5px solid #fde68a",
+                  borderRadius: 12, padding: "10px 12px", fontSize: 14, fontWeight: 500,
+                  color: "#111827", outline: "none", fontFamily: T.brand, minHeight: 80,
+                }}
+              />
+            </div>
+            <button
+              onClick={handleGuardarObs}
+              disabled={obsGuardando || !obsTexto.trim()}
+              style={{
+                height: 50, borderRadius: 14, border: "none", cursor: obsGuardando || !obsTexto.trim() ? "default" : "pointer",
+                background: obsGuardando || !obsTexto.trim() ? T.disabledBg : "#f59e0b",
+                color: obsGuardando || !obsTexto.trim() ? T.disabledInk : "#fff",
+                fontSize: 15, fontWeight: 800, fontFamily: T.brand,
+                opacity: obsGuardando || !obsTexto.trim() ? 0.5 : 1,
+                flexShrink: 0,
+              }}
+            >{obsGuardando ? "Guardando..." : "Guardar OBS"}</button>
+          </div>
+
+        ) : /* MODO NOMBRE: input + resultados */
+        mode === "sku" && busquedaTipo === "nombre" ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
             <div style={{ background: T.keypadBg, borderRadius: 18, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
               <span style={{ fontSize: 18 }}>🔍</span>

@@ -23,6 +23,9 @@ export default function PantallaAdmin() {
   const [soloRelevados, setSoloRelevados] = useState(false)
   const [loading, setLoading] = useState(true)
   const [modalLinea, setModalLinea] = useState(null)
+  const [subTab, setSubTab] = useState("productos")
+  const [observaciones, setObservaciones] = useState([])
+  const [loadingObs, setLoadingObs] = useState(false)
 
   const cargarDatos = () => {
     fetch(`${API}/admin/resumen`)
@@ -40,6 +43,18 @@ export default function PantallaAdmin() {
     Object.fromEntries(vendedores.map(v => [v.numero, v.nombre])),
     [vendedores]
   )
+
+  useEffect(() => {
+    if (subTab !== "observaciones") return
+    const ubicacion = datos[tabActiva]
+    if (!ubicacion) return
+    setLoadingObs(true)
+    fetch(`${API}/observaciones/?ubicacion_id=${ubicacion.ubicacion_id}`)
+      .then(r => r.json())
+      .then(setObservaciones)
+      .catch(() => setObservaciones([]))
+      .finally(() => setLoadingObs(false))
+  }, [subTab, tabActiva, datos])
 
   const ubicacion = datos[tabActiva]
 
@@ -109,7 +124,7 @@ export default function PantallaAdmin() {
         <div style={{ borderBottom: "1px solid #e5e7eb", display: "flex", gap: 0, marginBottom: 0 }}>
           {datos.map((d, i) => (
             <button key={d.ubicacion_id}
-              onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false) }}
+              onClick={() => { setTabActiva(i); setFiltroCat(""); setFiltroClasif(""); setBusqueda(""); setSoloRelevados(false); setSubTab("productos") }}
               style={{
                 padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer",
                 background: "none", border: "none",
@@ -123,7 +138,73 @@ export default function PantallaAdmin() {
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
+        {/* Sub-tabs: Productos | Observaciones */}
+        <div style={{ display: "flex", gap: 4, padding: "12px 0 0", borderBottom: "1px solid #e5e7eb", marginBottom: 0 }}>
+          {[["productos", "Productos"], ["observaciones", "Observaciones 💬"]].map(([id, label]) => (
+            <button key={id} onClick={() => setSubTab(id)} style={{
+              padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              background: "none", border: "none",
+              borderBottom: subTab === id ? `3px solid ${T}` : "3px solid transparent",
+              color: subTab === id ? T : "#6b7280",
+              marginBottom: -1,
+            }}>{label}</button>
+          ))}
+        </div>
+
+        {subTab === "observaciones" ? (
+          <div style={{ padding: "16px 0" }}>
+            {loadingObs ? (
+              <div style={{ textAlign: "center", padding: 40, color: "#9ca3af", fontSize: 14 }}>Cargando observaciones...</div>
+            ) : observaciones.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 40, color: "#9ca3af", fontSize: 14 }}>Sin observaciones para esta ubicación</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {observaciones.map(obs => (
+                  <div key={obs.id} style={{
+                    background: obs.resuelta ? "#f9fafb" : "#fffbeb",
+                    border: obs.resuelta ? "1px solid #e5e7eb" : "1.5px solid #fcd34d",
+                    borderRadius: 12, padding: "16px 20px",
+                    display: "flex", alignItems: "flex-start", gap: 16,
+                  }}>
+                    <div style={{ fontSize: 28, flexShrink: 0 }}>💬</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: obs.resuelta ? "#6b7280" : "#111827", marginBottom: 4 }}>{obs.texto}</div>
+                      {obs.sku && <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>SKU: <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{obs.sku}</span></div>}
+                      <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                        {resolveNombre(obs.operario, vendedoresMap)} · {new Date(obs.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                      {obs.resuelta && (
+                        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                          Resuelta por {resolveNombre(obs.resuelta_por, vendedoresMap)} · {new Date(obs.resuelta_en).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ flexShrink: 0 }}>
+                      {obs.resuelta ? (
+                        <span style={{ background: "#f0fdf4", color: "#16a34a", fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 999, border: "1px solid #86efac" }}>✓ Resuelta</span>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await fetch(`${API}/observaciones/${obs.id}/resolver?por=ADMIN`, { method: "PATCH" })
+                              setObservaciones(prev => prev.map(o => o.id === obs.id ? { ...o, resuelta: true, resuelta_por: "ADMIN", resuelta_en: new Date().toISOString() } : o))
+                            } catch {}
+                          }}
+                          style={{
+                            padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer",
+                            background: "#16a34a", color: "white", fontSize: 13, fontWeight: 700,
+                          }}
+                        >Resolver</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {subTab === "productos" && <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderBottom: "1px solid #f3f4f6" }}>
           <div style={{ position: "relative" }}>
             <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -163,7 +244,7 @@ export default function PantallaAdmin() {
             }}>Solo relevados</button>
             <span style={{ fontSize: 13, color: "#9ca3af" }}>{lineasFiltradas.length} productos</span>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Modal log */}
@@ -181,8 +262,8 @@ export default function PantallaAdmin() {
         />
       )}
 
-      {/* Tabla */}
-      <div style={{ overflowX: "auto" }}>
+      {/* Tabla — solo en subTab productos */}
+      {subTab === "productos" && <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
@@ -222,7 +303,7 @@ export default function PantallaAdmin() {
             </tr>
           </tfoot>
         </table>
-      </div>
+      </div>}
     </div>
   )
 }

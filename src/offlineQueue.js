@@ -1,5 +1,5 @@
 const DB_NAME = 'candymovil-offline'
-const DB_VERSION = 2
+const DB_VERSION = 3
 const STORE = 'pending-logs'
 const ART_STORE = 'articulos-cache'
 
@@ -13,6 +13,9 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains(ART_STORE)) {
         db.createObjectStore(ART_STORE, { keyPath: 'sku' })
+      }
+      if (!db.objectStoreNames.contains('obs-queue')) {
+        db.createObjectStore('obs-queue', { keyPath: 'id', autoIncrement: true })
       }
     }
     req.onsuccess = e => resolve(e.target.result)
@@ -95,4 +98,38 @@ export async function buscarArticuloLocal(q) {
   const todos = await buscarArticulosLocal(q)
   const exacto = todos.find(a => a.sku?.toLowerCase() === q.toLowerCase())
   return exacto || todos[0] || null
+}
+
+// --- Cola de observaciones offline ---
+
+const OBS_STORE = 'obs-queue'
+
+export async function queueObs(data) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OBS_STORE, 'readwrite')
+    tx.objectStore(OBS_STORE).add({ ...data, queued_at: new Date().toISOString() })
+    tx.oncomplete = resolve
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function getPendingObs() {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OBS_STORE, 'readonly')
+    const req = tx.objectStore(OBS_STORE).getAll()
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+export async function deleteObs(id) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OBS_STORE, 'readwrite')
+    tx.objectStore(OBS_STORE).delete(id)
+    tx.oncomplete = resolve
+    tx.onerror = () => reject(tx.error)
+  })
 }

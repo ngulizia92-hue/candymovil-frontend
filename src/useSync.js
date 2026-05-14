@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getPendingLogs, deleteLog, countPending } from './offlineQueue'
+import { getPendingLogs, deleteLog, countPending, getPendingObs, deleteObs } from './offlineQueue'
 import { syncArticulosCache } from './api'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -33,6 +33,24 @@ export function useSync() {
         if (r.ok) { await deleteLog(item.id); synced++ }
       } catch { break } // si falla uno, para — probablemente sin red todavía
     }
+    // Sync pending observations
+    const pendingObs = await getPendingObs()
+    for (const item of pendingObs) {
+      try {
+        const r = await fetch(`${BASE}/observaciones/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ubicacion_id: item.ubicacion_id,
+            sku: item.sku || null,
+            texto: item.texto,
+            operario: item.operario,
+          }),
+        })
+        if (r.ok) await deleteObs(item.id)
+      } catch { break }
+    }
+
     setSyncing(false)
     await refreshCount()
     return synced
