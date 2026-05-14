@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { T } from "./theme"
-import { buscarArticulo, agregarStockLog } from "./api"
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000"
+import { buscarArticulo, agregarStockLog, buscarArticulosPorNombre } from "./api"
 
 const IcPin = ({ s = 22 }) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -43,8 +41,7 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
     setBuscandoNombre(true)
     searchTimer.current = setTimeout(async () => {
       try {
-        const r = await fetch(`${API}/articulos/?q=${encodeURIComponent(nombreQuery.trim())}`)
-        const data = await r.json()
+        const data = await buscarArticulosPorNombre(nombreQuery.trim())
         setResultados(data)
       } catch {}
       finally { setBuscandoNombre(false) }

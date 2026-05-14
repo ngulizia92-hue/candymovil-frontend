@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getPendingLogs, deleteLog, countPending } from './offlineQueue'
+import { syncArticulosCache } from './api'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -37,12 +38,15 @@ export function useSync() {
     return synced
   }, [refreshCount])
 
-  // Cargar count inicial
-  useEffect(() => { refreshCount() }, [refreshCount])
+  // Cargar count inicial + cachear artículos
+  useEffect(() => {
+    refreshCount()
+    syncArticulosCache()
+  }, [refreshCount])
 
   // Detectar cambios de conectividad
   useEffect(() => {
-    const goOnline = async () => { setIsOnline(true); await sync() }
+    const goOnline = async () => { setIsOnline(true); await sync(); syncArticulosCache() }
     const goOffline = () => setIsOnline(false)
     window.addEventListener('online', goOnline)
     window.addEventListener('offline', goOffline)

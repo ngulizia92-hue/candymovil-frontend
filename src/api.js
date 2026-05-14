@@ -1,4 +1,4 @@
-import { queueLog } from './offlineQueue'
+import { queueLog, guardarArticulosCache, buscarArticuloLocal, buscarArticulosLocal } from './offlineQueue'
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
@@ -7,10 +7,36 @@ export async function getUbicaciones() {
   return r.json()
 }
 
-export async function buscarArticulo(sku) {
-  const r = await fetch(`${BASE}/articulos/?q=${encodeURIComponent(sku)}`)
-  const data = await r.json()
-  return data[0] || null
+// Descarga todos los artículos y los guarda en IndexedDB para uso offline
+export async function syncArticulosCache() {
+  if (!navigator.onLine) return
+  try {
+    const r = await fetch(`${BASE}/articulos/todos`)
+    if (!r.ok) return
+    const lista = await r.json()
+    await guardarArticulosCache(lista)
+  } catch {}
+}
+
+export async function buscarArticulo(q) {
+  if (!navigator.onLine) return buscarArticuloLocal(q)
+  try {
+    const r = await fetch(`${BASE}/articulos/?q=${encodeURIComponent(q)}`)
+    const data = await r.json()
+    return data[0] || null
+  } catch {
+    return buscarArticuloLocal(q)
+  }
+}
+
+export async function buscarArticulosPorNombre(q) {
+  if (!navigator.onLine) return buscarArticulosLocal(q)
+  try {
+    const r = await fetch(`${BASE}/articulos/?q=${encodeURIComponent(q)}`)
+    return r.json()
+  } catch {
+    return buscarArticulosLocal(q)
+  }
 }
 
 export async function agregarStockLog(ubicacion_id, sku, cantidad, operario) {
