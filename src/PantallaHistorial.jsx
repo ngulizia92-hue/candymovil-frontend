@@ -57,6 +57,13 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
   const [cargando, setCargando] = useState(entradas.length === 0)
   const [busqueda, setBusqueda] = useState("")
   const [filtro, setFiltro] = useState("hoy")
+  const [mostrarTeclado, setMostrarTeclado] = useState(false)
+
+  function onKeyBusqueda(k) {
+    if (k === "del") setBusqueda(v => v.slice(0, -1))
+    else if (k === "clr") setBusqueda("")
+    else setBusqueda(v => v + k)
+  }
 
   useEffect(() => {
     if (entradas.length === 0) setCargando(true)
@@ -134,22 +141,18 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
               Hoy · <span style={{ opacity: 0.65, marginLeft: 4 }}>{entradas.length + pendientes.length}</span>
             </div>
           </div>
-          <div style={{
-            flex: 1, background: "rgba(255,255,255,0.18)", borderRadius: 999,
-            display: "flex", alignItems: "center", padding: "0 14px", gap: 8,
+          <div onClick={() => setMostrarTeclado(true)} style={{
+            flex: 1, background: mostrarTeclado ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.18)",
+            borderRadius: 999, display: "flex", alignItems: "center", padding: "0 14px", gap: 8,
+            cursor: "pointer", height: 40,
           }}>
             <span style={{ color: "rgba(255,255,255,0.7)", display: "inline-flex" }}><IcSearch /></span>
-            <input
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              placeholder="Buscar SKU o nombre..."
-              style={{
-                flex: 1, background: "transparent", border: "none", outline: "none",
-                color: "#fff", fontSize: 13, fontWeight: 600,
-              }}
-            />
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: busqueda ? "#fff" : "rgba(255,255,255,0.5)" }}>
+              {busqueda || "Buscar SKU..."}
+            </span>
             {busqueda && (
-              <button onClick={() => setBusqueda("")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", padding: 0, fontSize: 16, lineHeight: 1 }}>×</button>
+              <button onClick={e => { e.stopPropagation(); setBusqueda(""); setMostrarTeclado(false) }}
+                style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", padding: 0, fontSize: 16, lineHeight: 1 }}>×</button>
             )}
           </div>
         </div>
@@ -250,6 +253,36 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
           </div>
         ))}
       </div>
+
+      {/* Teclado numérico de búsqueda */}
+      {mostrarTeclado && (
+        <div style={{ flexShrink: 0, background: T.keypadBg, padding: "10px 12px 20px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
+            <span style={{ fontSize: 20, fontWeight: 800, fontFamily: T.brand, color: T.ink, letterSpacing: 2, minWidth: 80 }}>
+              {busqueda || <span style={{ opacity: 0.3 }}>SKU</span>}
+            </span>
+            <button onClick={() => setMostrarTeclado(false)} style={{
+              background: T.primary, color: "#fff", border: "none", borderRadius: 999,
+              padding: "6px 18px", fontSize: 13, fontWeight: 800, cursor: "pointer",
+            }}>Listo</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateRows: "repeat(4,1fr)", gap: 6 }}>
+            {[["1","2","3"],["4","5","6"],["7","8","9"],["clr","0","del"]].map((row, ri) => (
+              <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+                {row.map(k => (
+                  <button key={k} onClick={() => onKeyBusqueda(k)} style={{
+                    height: 50, borderRadius: 12, border: "none", cursor: "pointer",
+                    background: k === "clr" || k === "del" ? T.keySpecialBg : T.keyBg,
+                    color: k === "clr" || k === "del" ? T.keySpecialInk : T.ink,
+                    fontSize: k === "del" ? 20 : k === "clr" ? 15 : 22,
+                    fontWeight: 800, fontFamily: T.brand,
+                  }}>{k === "del" ? "⌫" : k === "clr" ? "C" : k}</button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
