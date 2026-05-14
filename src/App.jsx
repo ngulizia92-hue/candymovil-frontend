@@ -164,7 +164,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: "100svh", display: "flex", flexDirection: "column", background: T.bg }}>
+    <div style={{ height: "100svh", display: "flex", flexDirection: "column", background: T.bg, overflow: "hidden" }}>
       <OfflineBanner isOnline={isOnline} syncing={syncing} pendingCount={pendingCount} />
 
       {pantalla === "relev" && (
