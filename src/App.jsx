@@ -1,5 +1,6 @@
 import { useState, useRef } from "react"
 import { T } from "./theme"
+import { useSync } from "./useSync"
 import PantallaIngreso from "./PantallaIngreso"
 import PantallaUbicacion from "./PantallaUbicacion"
 import PantallaRelevamiento from "./PantallaRelevamiento"
@@ -25,7 +26,7 @@ const IcPin = () => (
   </svg>
 )
 
-function BottomNav({ current, onChange }) {
+function BottomNav({ current, onChange, pendingCount }) {
   const items = [
     { id: "relev",     label: "Relevar",   Icon: IcScan },
     { id: "historial", label: "Historial", Icon: IcList },
@@ -44,16 +45,50 @@ function BottomNav({ current, onChange }) {
             flex: 1, background: "transparent", border: "none", cursor: "pointer",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             gap: 3, padding: 0, color: active ? T.navActive : T.navInactive,
+            position: "relative",
           }}>
             <div style={{
               width: 44, height: 30, borderRadius: 999,
               background: active ? T.navActiveBg : "transparent",
               display: "flex", alignItems: "center", justifyContent: "center",
-            }}><Icon /></div>
+              position: "relative",
+            }}>
+              <Icon />
+              {/* Badge de pendientes en el ícono Relevar */}
+              {id === "relev" && pendingCount > 0 && (
+                <span style={{
+                  position: "absolute", top: -2, right: -2,
+                  background: "#ef4444", color: "white",
+                  fontSize: 9, fontWeight: 800, borderRadius: 999,
+                  minWidth: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "0 3px",
+                }}>{pendingCount}</span>
+              )}
+            </div>
             <span style={{ fontSize: 11, fontWeight: active ? 700 : 600 }}>{label}</span>
           </button>
         )
       })}
+    </div>
+  )
+}
+
+function OfflineBanner({ isOnline, syncing, pendingCount }) {
+  if (isOnline && pendingCount === 0) return null
+  return (
+    <div style={{
+      background: isOnline ? (syncing ? "#3FB8C7" : "#16a34a") : "#1f2937",
+      color: "white", padding: "7px 16px",
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+      fontSize: 12, fontWeight: 700, letterSpacing: "0.3px", flexShrink: 0,
+    }}>
+      {!isOnline ? (
+        <><span>📵</span> Sin conexión — las cargas se guardan localmente</>
+      ) : syncing ? (
+        <><span>🔄</span> Sincronizando {pendingCount} carga{pendingCount !== 1 ? "s" : ""}...</>
+      ) : (
+        <><span>✅</span> Sincronizado</>
+      )}
     </div>
   )
 }
@@ -64,20 +99,21 @@ export default function App() {
   const [sesion, setSesion] = useState(null)
   const [onboarding, setOnboarding] = useState(true)
 
-  // Conteo local de items en esta sesión (para el header de Relevamiento)
+  const { pendingCount, syncing, isOnline, refreshCount } = useSync()
+
   const conteoRef = useRef({ total: 0 })
   const [conteoTotal, setConteoTotal] = useState(0)
   const conteo = {
     total: conteoTotal,
-    agregar: (sku, descripcion, cantidad) => {
+    agregar: () => {
       conteoRef.current.total += 1
       setConteoTotal(t => t + 1)
+      refreshCount() // actualiza badge si fue guardado offline
     }
   }
 
   if (isAdmin) return <PantallaAdmin />
 
-  // Onboarding flow: no bottom nav
   if (pantalla === "login") {
     return (
       <PantallaIngreso onIngresar={(datos) => {
@@ -103,9 +139,10 @@ export default function App() {
     )
   }
 
-  // Main app with bottom nav
   return (
     <div style={{ minHeight: "100svh", display: "flex", flexDirection: "column", background: T.bg }}>
+      <OfflineBanner isOnline={isOnline} syncing={syncing} pendingCount={pendingCount} />
+
       {pantalla === "relev" && (
         <PantallaRelevamiento
           sesion={sesion}
@@ -114,7 +151,7 @@ export default function App() {
         />
       )}
       {pantalla === "historial" && (
-        <PantallaHistorial sesion={sesion} />
+        <PantallaHistorial sesion={sesion} pendingCount={pendingCount} />
       )}
       {pantalla === "location" && !onboarding && (
         <PantallaUbicacion
@@ -125,10 +162,14 @@ export default function App() {
         />
       )}
       {(pantalla === "relev" || pantalla === "historial") && (
-        <BottomNav current={pantalla} onChange={(id) => {
-          if (id === "location") { setOnboarding(false); setPantalla("location") }
-          else setPantalla(id)
-        }} />
+        <BottomNav
+          current={pantalla}
+          pendingCount={pendingCount}
+          onChange={(id) => {
+            if (id === "location") { setOnboarding(false); setPantalla("location") }
+            else setPantalla(id)
+          }}
+        />
       )}
     </div>
   )
