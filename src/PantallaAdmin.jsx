@@ -343,11 +343,11 @@ function LogModal({ linea, ubicacion, vendedoresMap, onClose, onRefresh }) {
   }
 
   async function handleLimpiar() {
-    if (!window.confirm(`¿Limpiar todos los registros de ${linea.sku}? Quedará en 0 unidades. Esta acción no se puede deshacer.`)) return
+    if (!window.confirm(`¿Limpiar todos los registros de ${linea.sku}? Se borrarán permanentemente y quedará en 0.`)) return
     setLimpiando(true)
     try {
       await fetch(`${API}/admin/limpiar/${linea.sku}/${ubicacion.ubicacion_id}`, { method: "POST" })
-      onRefresh()
+      onRefresh()  // refresca la tabla y cierra el modal
     } finally {
       setLimpiando(false)
     }
