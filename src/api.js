@@ -66,8 +66,11 @@ export async function agregarStockLog(ubicacion_id, sku, cantidad, operario) {
   }
 }
 
-export async function getStockLogHoy(operario) {
-  const r = await fetch(`${BASE}/stock-log/?operario=${encodeURIComponent(operario)}`)
+export async function getStockLogHoy(operario, desde = null, hasta = null) {
+  const params = new URLSearchParams({ operario })
+  if (desde) params.set("desde", desde)
+  if (hasta) params.set("hasta", hasta)
+  const r = await fetch(`${BASE}/stock-log/?${params}`)
   if (!r.ok) throw new Error("Error al obtener historial")
   return r.json()
 }

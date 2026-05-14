@@ -39,16 +39,31 @@ function HeaderBlock({ children }) {
 
 const CACHE_KEY = v => `cm_historial_${v}`
 
+const hoy = () => new Date().toISOString().slice(0, 10)
+const ayer = () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10) }
+const lunesDeEstaSemana = () => {
+  const d = new Date(); const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff); return d.toISOString().slice(0, 10)
+}
+
+const FILTROS = [
+  { id: "hoy",    label: "Hoy",        desde: () => hoy(),              hasta: () => hoy() },
+  { id: "ayer",   label: "Ayer",       desde: () => ayer(),             hasta: () => ayer() },
+  { id: "semana", label: "Esta semana", desde: () => lunesDeEstaSemana(), hasta: () => hoy() },
+]
+
 export default function PantallaHistorial({ sesion, pendingCount, refreshCount, entradas, setEntradas }) {
   const [pendientes, setPendientes] = useState([])
   const [cargando, setCargando] = useState(entradas.length === 0)
   const [busqueda, setBusqueda] = useState("")
+  const [filtro, setFiltro] = useState("hoy")
 
   useEffect(() => {
     if (entradas.length === 0) setCargando(true)
+    const f = FILTROS.find(f => f.id === filtro)
 
     const cargarServidor = navigator.onLine
-      ? getStockLogHoy(sesion.vendedor).catch(() => null)
+      ? getStockLogHoy(sesion.vendedor, f.desde(), f.hasta()).catch(() => null)
       : Promise.resolve(null)
 
     Promise.all([cargarServidor, getPendingLogs().catch(() => [])
@@ -59,7 +74,7 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
       }
       setPendientes(cola)
     }).finally(() => setCargando(false))
-  }, [sesion.vendedor, pendingCount])
+  }, [sesion.vendedor, pendingCount, filtro])
 
   async function handleEliminar(id) {
     try {
@@ -94,7 +109,19 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
           </div>
           <div style={{ color: T.headerInk, display: "inline-flex", opacity: 0.85 }}><IcCal /></div>
         </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        {/* Filtros de fecha */}
+        <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+          {FILTROS.map(f => (
+            <button key={f.id} onClick={() => setFiltro(f.id)} style={{
+              flex: 1, height: 30, borderRadius: 999, border: "none", cursor: "pointer",
+              background: filtro === f.id ? "#fff" : "rgba(255,255,255,0.18)",
+              color: filtro === f.id ? T.primary : "rgba(255,255,255,0.85)",
+              fontSize: 12, fontWeight: 700,
+            }}>{f.label}</button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <div style={{
             background: "rgba(255,255,255,0.18)", borderRadius: 999, padding: "3px 3px",
             display: "flex", flex: "0 0 auto",
@@ -214,12 +241,12 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
               <div title="Ajustado por admin" style={{
                 padding: 4, display: "inline-flex", color: "#f59e0b", opacity: 0.8,
               }}><IcLock /></div>
-            ) : (
+            ) : filtro === "hoy" ? (
               <button onClick={() => handleEliminar(e.id)} style={{
                 background: "transparent", border: "none", cursor: "pointer",
                 color: T.muted, padding: 4, display: "inline-flex",
               }}><IcTrash /></button>
-            )}
+            ) : null}
           </div>
         ))}
       </div>
