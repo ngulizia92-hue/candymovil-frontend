@@ -159,6 +159,37 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
       </HeaderBlock>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+
+        {/* Teclado numérico de búsqueda */}
+        {mostrarTeclado && (
+          <div style={{ background: T.keypadBg, borderRadius: 20, padding: "12px 12px 14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, padding: "0 4px" }}>
+              <span style={{ fontSize: 22, fontWeight: 800, fontFamily: T.brand, color: T.ink, letterSpacing: 2 }}>
+                {busqueda || <span style={{ opacity: 0.3, fontSize: 16 }}>Buscar SKU...</span>}
+              </span>
+              <button onClick={() => setMostrarTeclado(false)} style={{
+                background: T.primary, color: "#fff", border: "none", borderRadius: 999,
+                padding: "6px 18px", fontSize: 13, fontWeight: 800, cursor: "pointer",
+              }}>Listo</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateRows: "repeat(4,1fr)", gap: 6 }}>
+              {[["1","2","3"],["4","5","6"],["7","8","9"],["clr","0","del"]].map((row, ri) => (
+                <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+                  {row.map(k => (
+                    <button key={k} onClick={() => onKeyBusqueda(k)} style={{
+                      height: 50, borderRadius: 12, border: "none", cursor: "pointer",
+                      background: k === "clr" || k === "del" ? T.keySpecialBg : T.keyBg,
+                      color: k === "clr" || k === "del" ? T.keySpecialInk : T.ink,
+                      fontSize: k === "del" ? 20 : k === "clr" ? 15 : 22,
+                      fontWeight: 800, fontFamily: T.brand,
+                    }}>{k === "del" ? "⌫" : k === "clr" ? "C" : k}</button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Total banner */}
         <div style={{
           background: T.accent, color: T.accentInk, borderRadius: 20,
@@ -254,35 +285,6 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
         ))}
       </div>
 
-      {/* Teclado numérico de búsqueda */}
-      {mostrarTeclado && (
-        <div style={{ flexShrink: 0, background: T.keypadBg, padding: "10px 12px 20px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
-            <span style={{ fontSize: 20, fontWeight: 800, fontFamily: T.brand, color: T.ink, letterSpacing: 2, minWidth: 80 }}>
-              {busqueda || <span style={{ opacity: 0.3 }}>SKU</span>}
-            </span>
-            <button onClick={() => setMostrarTeclado(false)} style={{
-              background: T.primary, color: "#fff", border: "none", borderRadius: 999,
-              padding: "6px 18px", fontSize: 13, fontWeight: 800, cursor: "pointer",
-            }}>Listo</button>
-          </div>
-          <div style={{ display: "grid", gridTemplateRows: "repeat(4,1fr)", gap: 6 }}>
-            {[["1","2","3"],["4","5","6"],["7","8","9"],["clr","0","del"]].map((row, ri) => (
-              <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
-                {row.map(k => (
-                  <button key={k} onClick={() => onKeyBusqueda(k)} style={{
-                    height: 50, borderRadius: 12, border: "none", cursor: "pointer",
-                    background: k === "clr" || k === "del" ? T.keySpecialBg : T.keyBg,
-                    color: k === "clr" || k === "del" ? T.keySpecialInk : T.ink,
-                    fontSize: k === "del" ? 20 : k === "clr" ? 15 : 22,
-                    fontWeight: 800, fontFamily: T.brand,
-                  }}>{k === "del" ? "⌫" : k === "clr" ? "C" : k}</button>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
