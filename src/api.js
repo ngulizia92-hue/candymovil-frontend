@@ -118,3 +118,11 @@ export async function resolverObservacion(id, por) {
   if (!r.ok) throw new Error('Error')
   return r.json()
 }
+
+export async function deleteObservacion(id, operario) {
+  const r = await fetch(`${BASE}/observaciones/${id}?operario=${encodeURIComponent(operario)}`, {
+    method: 'DELETE',
+  })
+  if (!r.ok) throw new Error('Error al eliminar')
+  return r.json()
+}

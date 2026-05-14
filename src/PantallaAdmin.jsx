@@ -169,7 +169,12 @@ export default function PantallaAdmin() {
                     <div style={{ fontSize: 28, flexShrink: 0 }}>💬</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 15, fontWeight: 600, color: obs.resuelta ? "#6b7280" : "#111827", marginBottom: 4 }}>{obs.texto}</div>
-                      {obs.sku && <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>SKU: <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{obs.sku}</span></div>}
+                      {obs.sku && (
+                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                          SKU <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{obs.sku}</span>
+                          {obs.sku_descripcion && <span style={{ color: "#9ca3af" }}> · {obs.sku_descripcion}</span>}
+                        </div>
+                      )}
                       <div style={{ fontSize: 12, color: "#9ca3af" }}>
                         {resolveNombre(obs.operario, vendedoresMap)} · {new Date(obs.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                       </div>

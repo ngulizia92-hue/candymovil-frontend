@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { T } from "./theme"
-import { getStockLogHoy, deleteStockLog, getObservaciones } from "./api"
+import { getStockLogHoy, deleteStockLog, getObservaciones, deleteObservacion } from "./api"
 import { getPendingLogs, deleteLog, getPendingObs } from "./offlineQueue"
 
 const IcTrash = () => (
@@ -98,6 +98,13 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
       const nuevas = entradas.filter(e => e.id !== id)
       setEntradas(nuevas)
       localStorage.setItem(CACHE_KEY(sesion.vendedor), JSON.stringify(nuevas))
+    } catch {}
+  }
+
+  async function handleEliminarObs(id) {
+    try {
+      await deleteObservacion(id, sesion.vendedor)
+      setObservaciones(prev => prev.filter(o => o.id !== id))
     } catch {}
   }
 
@@ -247,11 +254,19 @@ export default function PantallaHistorial({ sesion, pendingCount, refreshCount, 
             }}>💬</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#92400e", marginBottom: 2 }}>{obs.texto}</div>
-              {obs.sku && <div style={{ fontSize: 11, color: "#b45309", marginBottom: 2 }}>SKU: {obs.sku}</div>}
+              {obs.sku && (
+                <div style={{ fontSize: 11, color: "#b45309", marginBottom: 2, fontFamily: "monospace", fontWeight: 700 }}>
+                  SKU {obs.sku}{obs.sku_descripcion ? ` · ${obs.sku_descripcion}` : ""}
+                </div>
+              )}
               <div style={{ fontSize: 11, color: "#b45309", marginTop: 2 }}>
                 {obs.ubicacion_nombre || ""} · {formatHora(obs.created_at)}
               </div>
             </div>
+            <button onClick={() => handleEliminarObs(obs.id)} style={{
+              background: "transparent", border: "none", cursor: "pointer",
+              color: "#b45309", padding: 4, display: "inline-flex", opacity: 0.6, flexShrink: 0,
+            }}><IcTrash /></button>
           </div>
         ))}
 

@@ -31,9 +31,14 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
 
   // OBS mode
   const [obsTexto, setObsTexto] = useState("")
-  const [obsSkuRef, setObsSkuRef] = useState("")
+  const [obsSkuRef, setObsSkuRef] = useState("")        // SKU final a guardar
+  const [obsRefQuery, setObsRefQuery] = useState("")    // texto del buscador de referencia
+  const [obsRefResultados, setObsRefResultados] = useState([])
+  const [obsRefBuscando, setObsRefBuscando] = useState(false)
+  const [obsRefArticulo, setObsRefArticulo] = useState(null) // artículo confirmado
   const [obsGuardando, setObsGuardando] = useState(false)
   const [obsExito, setObsExito] = useState(false)
+  const obsRefTimer = useRef(null)
 
   // Artículo seleccionado
   const [articulo, setArticulo] = useState(null)
@@ -60,6 +65,21 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
       setTimeout(() => nombreInputRef.current?.focus(), 100)
     }
   }, [busquedaTipo, mode])
+
+  // Búsqueda de artículo de referencia en OBS (debounce)
+  useEffect(() => {
+    if (busquedaTipo !== "obs" || obsRefArticulo) return
+    clearTimeout(obsRefTimer.current)
+    if (!obsRefQuery.trim() || obsRefQuery.length < 2) { setObsRefResultados([]); return }
+    setObsRefBuscando(true)
+    obsRefTimer.current = setTimeout(async () => {
+      try {
+        const data = await buscarArticulosPorNombre(obsRefQuery.trim())
+        setObsRefResultados(data)
+      } catch {}
+      finally { setObsRefBuscando(false) }
+    }, 350)
+  }, [obsRefQuery, busquedaTipo, obsRefArticulo])
 
   function seleccionarArticulo(art) {
     setArticulo(art)
@@ -118,6 +138,9 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
     setBloqueado(false)
     setObsTexto("")
     setObsSkuRef("")
+    setObsRefQuery("")
+    setObsRefResultados([])
+    setObsRefArticulo(null)
     setObsExito(false)
   }
 
@@ -127,14 +150,17 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
     try {
       await crearObservacion({
         ubicacion_id: sesion.ubicacion_id,
-        sku: obsSkuRef.trim() || null,
+        sku: obsSkuRef || null,
         texto: obsTexto.trim(),
         operario: sesion.vendedor,
       })
       setObsTexto("")
       setObsSkuRef("")
+      setObsRefQuery("")
+      setObsRefResultados([])
+      setObsRefArticulo(null)
       setObsExito(true)
-      setTimeout(() => setObsExito(false), 2000)
+      setTimeout(() => setObsExito(false), 2500)
     } catch {}
     finally { setObsGuardando(false) }
   }
@@ -240,6 +266,13 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
                 {skuValue || <span style={{ fontSize: 24, letterSpacing: 1, fontWeight: 600 }}>· · · ·</span>}
               </div>
             </>
+          ) : busquedaTipo === "obs" ? (
+            <>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "2px", color: "#f59e0b", marginBottom: 6 }}>💬 OBSERVACIÓN</div>
+              <div style={{ fontSize: 14, color: obsTexto ? T.ink : T.muted, fontWeight: obsTexto ? 600 : 500, lineHeight: 1.4 }}>
+                {obsTexto ? (obsTexto.length > 70 ? obsTexto.slice(0, 70) + "…" : obsTexto) : "Completá el formulario abajo"}
+              </div>
+            </>
           ) : (
             <>
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "2px", color: T.primary, marginBottom: 8 }}>NOMBRE DEL ARTÍCULO</div>
@@ -270,37 +303,85 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
       {/* Contenido del teclado */}
       <div style={{ flex: 1, padding: "8px 18px 12px", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
 
-        {/* MODO OBS: textarea + sku ref + guardar */}
+        {/* MODO OBS: búsqueda de artículo de referencia + textarea + guardar */}
         {mode === "sku" && busquedaTipo === "obs" ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
             {obsExito && (
-              <div style={{ background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 14, padding: "10px 14px", textAlign: "center", fontSize: 14, fontWeight: 700, color: "#16a34a" }}>
+              <div style={{ background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 14, padding: "10px 14px", textAlign: "center", fontSize: 14, fontWeight: 700, color: "#16a34a", flexShrink: 0 }}>
                 ✓ Observación guardada
               </div>
             )}
-            <div style={{ background: T.keypadBg, borderRadius: 18, padding: "12px 14px", flexShrink: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", color: "#f59e0b", marginBottom: 8 }}>SKU REFERENCIA (opcional)</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="text"
-                  value={obsSkuRef}
-                  onChange={e => setObsSkuRef(e.target.value)}
-                  placeholder="Ej: 12345"
-                  style={{
-                    flex: 1, background: "white", border: "1.5px solid #fde68a", borderRadius: 10,
-                    padding: "7px 12px", fontSize: 14, fontWeight: 600, color: "#92400e",
-                    outline: "none", fontFamily: T.brand,
-                  }}
-                />
-                {obsSkuRef && (
-                  <button onClick={() => setObsSkuRef("")} style={{
-                    background: "#fde68a", border: "none", borderRadius: 8, cursor: "pointer",
-                    color: "#92400e", fontWeight: 700, fontSize: 13, padding: "6px 10px",
-                  }}>✕</button>
-                )}
+
+            {/* SKU referencia — búsqueda inteligente */}
+            <div style={{ background: T.keypadBg, borderRadius: 18, padding: "10px 14px", flexShrink: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", color: "#f59e0b", marginBottom: 8 }}>
+                SKU REFERENCIA <span style={{ fontWeight: 400, opacity: 0.7 }}>(opcional)</span>
               </div>
+
+              {obsRefArticulo ? (
+                /* Artículo linkeado — mostrar confirmación */
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "white", borderRadius: 12, padding: "8px 12px", border: "1.5px solid #fde68a" }}>
+                  <div style={{
+                    background: "#fef3c7", color: "#d97706", borderRadius: 8, padding: "4px 8px",
+                    fontSize: 11, fontWeight: 800, fontFamily: T.brand, flexShrink: 0,
+                  }}>{obsRefArticulo.sku}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: "#92400e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {obsRefArticulo.descripcion}
+                  </div>
+                  <button onClick={() => { setObsRefArticulo(null); setObsSkuRef(""); setObsRefQuery(""); setObsRefResultados([]) }} style={{
+                    background: "#fde68a", border: "none", borderRadius: 6, cursor: "pointer",
+                    color: "#92400e", fontWeight: 700, fontSize: 12, padding: "4px 8px", flexShrink: 0,
+                  }}>✕</button>
+                </div>
+              ) : (
+                /* Input de búsqueda */
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, background: "white", borderRadius: 10, padding: "6px 12px", border: "1.5px solid #fde68a" }}>
+                    <span style={{ fontSize: 14, opacity: 0.5 }}>🔍</span>
+                    <input
+                      type="text"
+                      value={obsRefQuery}
+                      onChange={e => setObsRefQuery(e.target.value)}
+                      placeholder="Buscar por SKU o nombre..."
+                      style={{
+                        flex: 1, background: "transparent", border: "none", outline: "none",
+                        fontSize: 14, fontWeight: 600, color: "#92400e", fontFamily: T.brand,
+                      }}
+                    />
+                    {obsRefQuery && (
+                      <button onClick={() => { setObsRefQuery(""); setObsRefResultados([]) }} style={{
+                        background: "none", border: "none", cursor: "pointer", color: "#b45309", fontSize: 16, padding: 0, lineHeight: 1,
+                      }}>✕</button>
+                    )}
+                  </div>
+                  {/* Resultados de búsqueda */}
+                  {obsRefBuscando && (
+                    <div style={{ fontSize: 12, color: "#b45309", padding: "4px 4px", opacity: 0.7 }}>Buscando...</div>
+                  )}
+                  {!obsRefBuscando && obsRefResultados.length > 0 && (
+                    <div style={{ maxHeight: 120, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                      {obsRefResultados.slice(0, 6).map(art => (
+                        <button key={art.sku} onClick={() => { setObsRefArticulo(art); setObsSkuRef(art.sku); setObsRefResultados([]) }} style={{
+                          background: "white", border: "1px solid #fde68a", borderRadius: 10,
+                          padding: "7px 10px", display: "flex", alignItems: "center", gap: 8,
+                          textAlign: "left", cursor: "pointer", width: "100%",
+                        }}>
+                          <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 800, color: "#d97706", flexShrink: 0, background: "#fef3c7", padding: "2px 6px", borderRadius: 6 }}>
+                            {art.sku}
+                          </span>
+                          <span style={{ fontSize: 12, color: "#92400e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {art.descripcion}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <div style={{ flex: 1, background: T.keypadBg, borderRadius: 18, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
+
+            {/* Textarea de observación */}
+            <div style={{ flex: 1, background: T.keypadBg, borderRadius: 18, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 6, minHeight: 0 }}>
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", color: "#f59e0b" }}>OBSERVACIÓN</div>
               <textarea
                 value={obsTexto}
@@ -309,10 +390,11 @@ export default function PantallaRelevamiento({ sesion, conteo, onChangeLocation 
                 style={{
                   flex: 1, resize: "none", background: "white", border: "1.5px solid #fde68a",
                   borderRadius: 12, padding: "10px 12px", fontSize: 14, fontWeight: 500,
-                  color: "#111827", outline: "none", fontFamily: T.brand, minHeight: 80,
+                  color: "#111827", outline: "none", fontFamily: T.brand, minHeight: 70,
                 }}
               />
             </div>
+
             <button
               onClick={handleGuardarObs}
               disabled={obsGuardando || !obsTexto.trim()}
